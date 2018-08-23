@@ -87,6 +87,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:android": [
@@ -99,6 +100,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:darwin": [
@@ -111,6 +113,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:dragonfly": [
@@ -123,6 +126,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:freebsd": [
@@ -135,6 +139,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:illumos": [
@@ -147,6 +152,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:ios": [
@@ -159,6 +165,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:js": [
@@ -171,6 +178,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:linux": [
@@ -183,6 +191,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:nacl": [
@@ -195,6 +204,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:netbsd": [
@@ -207,6 +217,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:openbsd": [
@@ -219,6 +230,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:plan9": [
@@ -231,6 +243,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:solaris": [
@@ -243,6 +256,7 @@ go_library(
             "//staging/src/k8s.io/client-go/tools/cache:go_default_library",
             "//staging/src/k8s.io/client-go/tools/watch:go_default_library",
             "//staging/src/k8s.io/component-base/metrics:go_default_library",
+            "//vendor/github.com/opencontainers/runc/libcontainer/system:go_default_library",
             "//vendor/k8s.io/utils/net:go_default_library",
         ],
         "@io_bazel_rules_go//go/platform:windows": [
