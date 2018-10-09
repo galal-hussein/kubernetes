@@ -90,6 +90,10 @@ const (
 	etcdRetryInterval = 1 * time.Second
 )
 
+var (
+	DefaultProxyDialerFn utilnet.DialFunc
+)
+
 // TODO: delete this check after insecure flags removed in v1.24
 func checkNonZeroInsecurePort(fs *pflag.FlagSet) error {
 	for _, name := range options.InsecurePortFlags {
@@ -201,6 +205,10 @@ func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan
 	nodeTunneler, proxyTransport, err := CreateNodeDialer(completedOptions)
 	if err != nil {
 		return nil, err
+	}
+
+	if DefaultProxyDialerFn != nil {
+		completedOptions.KubeletConfig.Dial = DefaultProxyDialerFn
 	}
 
 	kubeAPIServerConfig, serviceResolver, pluginInitializer, err := CreateKubeAPIServerConfig(completedOptions, nodeTunneler, proxyTransport)
