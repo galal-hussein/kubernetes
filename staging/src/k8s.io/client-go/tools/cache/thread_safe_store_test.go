@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
 Copyright 2019 The Kubernetes Authors.
+=======
+Copyright 2014 The Kubernetes Authors.
+>>>>>>> Allow indexers to be added after an informer start
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +22,7 @@ package cache
 
 import (
 	"testing"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestThreadSafeStoreDeleteRemovesEmptySetsFromIndex(t *testing.T) {
@@ -90,3 +95,96 @@ func TestThreadSafeStoreAddKeepsNonEmptySetPostDeleteFromIndex(t *testing.T) {
 		t.Errorf("Index backing string set has incorrect length, expect 1. Set length: %d", len(set))
 	}
 }
+
+func TestAddIndexerAfterAdd(t *testing.T) {
+	store := NewThreadSafeStore(Indexers{}, Indices{})
+
+	// Add first indexer
+	err := store.AddIndexers(Indexers{
+		"first": func(obj interface{}) ([]string, error) {
+			value := obj.(string)
+			return []string{
+				value,
+			}, nil
+		},
+	})
+	if err != nil {
+		t.Errorf("failed to add first indexer")
+	}
+
+	// Add some data to index
+	store.Add("keya", "value")
+	store.Add("keyb", "value")
+
+	// Assert
+	indexKeys, _ := store.IndexKeys("first", "value")
+	expected := sets.NewString("keya", "keyb")
+	actual := sets.NewString(indexKeys...)
+	if !actual.Equal(expected) {
+		t.Errorf("expected %v does not match actual %v", expected, actual)
+	}
+
+	// Add same indexer, which should fail
+	err = store.AddIndexers(Indexers{
+		"first": func(interface{}) ([]string, error) {
+			return nil, nil
+		},
+	})
+	if err == nil {
+		t.Errorf("Add same index should have failed")
+	}
+
+	// Add new indexer
+	err = store.AddIndexers(Indexers{
+		"second": func(obj interface{}) ([]string, error) {
+			v := obj.(string)
+			return []string{
+				v +"2",
+			}, nil
+		},
+	})
+	if err != nil {
+		t.Errorf("failed to add second indexer")
+	}
+
+	// Assert indexers was added
+	if _, ok := store.GetIndexers()["first"]; !ok {
+		t.Errorf("missing indexer first")
+	}
+	if _, ok := store.GetIndexers()["second"]; !ok {
+		t.Errorf("missing indexer second")
+	}
+
+	// Assert existing data is re-indexed
+	indexKeys, _ = store.IndexKeys("first", "value")
+	expected = sets.NewString("keya", "keyb")
+	actual = sets.NewString(indexKeys...)
+	if !actual.Equal(expected) {
+		t.Errorf("expected %v does not match actual %v", expected, actual)
+	}
+	indexKeys, _ = store.IndexKeys("second", "value2")
+	expected = sets.NewString("keya", "keyb")
+	actual = sets.NewString(indexKeys...)
+	if !actual.Equal(expected) {
+		t.Errorf("expected %v does not match actual %v", expected, actual)
+	}
+
+	// Add more data
+	store.Add("keyc", "value")
+	store.Add("keyd", "value")
+
+	// Assert new data is indexed
+	indexKeys, _ = store.IndexKeys("first", "value")
+	expected = sets.NewString("keya", "keyb", "keyc", "keyd")
+	actual = sets.NewString(indexKeys...)
+	if !actual.Equal(expected) {
+		t.Errorf("expected %v does not match actual %v", expected, actual)
+	}
+	indexKeys, _ = store.IndexKeys("second", "value2")
+	expected = sets.NewString("keya", "keyb", "keyc", "keyd")
+	actual = sets.NewString(indexKeys...)
+	if !actual.Equal(expected) {
+		t.Errorf("expected %v does not match actual %v", expected, actual)
+	}
+}
+
