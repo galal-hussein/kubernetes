@@ -27,7 +27,6 @@ import (
 
 	libcontainercgroups "github.com/opencontainers/runc/libcontainer/cgroups"
 	cgroupfs "github.com/opencontainers/runc/libcontainer/cgroups/fs"
-	cgroupsystemd "github.com/opencontainers/runc/libcontainer/cgroups/systemd"
 	libcontainerconfigs "github.com/opencontainers/runc/libcontainer/configs"
 	"k8s.io/klog"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
@@ -45,13 +44,9 @@ type libcontainerCgroupManagerType string
 const (
 	// libcontainerCgroupfs means use libcontainer with cgroupfs
 	libcontainerCgroupfs libcontainerCgroupManagerType = "cgroupfs"
-	// libcontainerSystemd means use libcontainer with systemd
-	libcontainerSystemd libcontainerCgroupManagerType = "systemd"
 	// noneDriver is the name of the "NOP" driver, which is used when
 	// cgroup is not accessible
 	noneDriver = "none"
-	// systemdSuffix is the cgroup name suffix for systemd
-	systemdSuffix string = ".slice"
 )
 
 var RootCgroupName = CgroupName([]string{})
@@ -74,48 +69,6 @@ func NewCgroupName(base CgroupName, components ...string) CgroupName {
 	return CgroupName(append(baseCopy, components...))
 }
 
-func escapeSystemdCgroupName(part string) string {
-	return strings.Replace(part, "-", "_", -1)
-}
-
-func unescapeSystemdCgroupName(part string) string {
-	return strings.Replace(part, "_", "-", -1)
-}
-
-// cgroupName.ToSystemd converts the internal cgroup name to a systemd name.
-// For example, the name {"kubepods", "burstable", "pod1234-abcd-5678-efgh"} becomes
-// "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod1234_abcd_5678_efgh.slice"
-// This function always expands the systemd name into the cgroupfs form. If only
-// the last part is needed, use path.Base(...) on it to discard the rest.
-func (cgroupName CgroupName) ToSystemd() string {
-	if len(cgroupName) == 0 || (len(cgroupName) == 1 && cgroupName[0] == "") {
-		return "/"
-	}
-	newparts := []string{}
-	for _, part := range cgroupName {
-		part = escapeSystemdCgroupName(part)
-		newparts = append(newparts, part)
-	}
-
-	result, err := cgroupsystemd.ExpandSlice(strings.Join(newparts, "-") + systemdSuffix)
-	if err != nil {
-		// Should never happen...
-		panic(fmt.Errorf("error converting cgroup name [%v] to systemd format: %v", cgroupName, err))
-	}
-	return result
-}
-
-func ParseSystemdToCgroupName(name string) CgroupName {
-	driverName := path.Base(name)
-	driverName = strings.TrimSuffix(driverName, systemdSuffix)
-	parts := strings.Split(driverName, "-")
-	result := []string{}
-	for _, part := range parts {
-		result = append(result, unescapeSystemdCgroupName(part))
-	}
-	return CgroupName(result)
-}
-
 func (cgroupName CgroupName) ToCgroupfs() string {
 	return "/" + path.Join(cgroupName...)
 }
@@ -126,10 +79,6 @@ func ParseCgroupfsToCgroupName(name string) CgroupName {
 		components = []string{}
 	}
 	return CgroupName(components)
-}
-
-func IsSystemdStyleName(name string) bool {
-	return strings.HasSuffix(name, systemdSuffix)
 }
 
 // libcontainerAdapter provides a simplified interface to libcontainer based on libcontainer type.
@@ -152,16 +101,6 @@ func (l *libcontainerAdapter) newManager(cgroups *libcontainerconfigs.Cgroup, pa
 			Cgroups: cgroups,
 			Paths:   paths,
 		}, nil
-	case libcontainerSystemd:
-		// this means you asked systemd to manage cgroups, but systemd was not on the host, so all you can do is panic...
-		if !cgroupsystemd.UseSystemd() {
-			panic("systemd cgroup manager not available")
-		}
-		f, err := cgroupsystemd.NewSystemdCgroupsManager()
-		if err != nil {
-			return nil, err
-		}
-		return f(cgroups, paths), nil
 	}
 	return nil, fmt.Errorf("invalid cgroup manager configuration")
 }
@@ -205,9 +144,6 @@ func NewCgroupManager(cs *CgroupSubsystems, cgroupDriver string) (CgroupManager,
 		return cm, nil
 	}
 	managerType := libcontainerCgroupfs
-	if cgroupDriver == string(libcontainerSystemd) {
-		managerType = libcontainerSystemd
-	}
 	return &cgroupManagerImpl{
 		subsystems: cs,
 		adapter:    newLibcontainerAdapter(managerType),
@@ -218,17 +154,11 @@ func NewCgroupManager(cs *CgroupSubsystems, cgroupDriver string) (CgroupManager,
 // Name converts the cgroup to the driver specific value in cgroupfs form.
 // This always returns a valid cgroupfs path even when systemd driver is in use!
 func (m *cgroupManagerImpl) Name(name CgroupName) string {
-	if m.adapter.cgroupManagerType == libcontainerSystemd {
-		return name.ToSystemd()
-	}
 	return name.ToCgroupfs()
 }
 
 // CgroupName converts the literal cgroupfs name on the host to an internal identifier.
 func (m *cgroupManagerImpl) CgroupName(name string) CgroupName {
-	if m.adapter.cgroupManagerType == libcontainerSystemd {
-		return ParseSystemdToCgroupName(name)
-	}
 	return ParseCgroupfsToCgroupName(name)
 }
 
@@ -240,22 +170,6 @@ func (m *cgroupManagerImpl) buildCgroupPaths(name CgroupName) map[string]string 
 		cgroupPaths[key] = path.Join(val, cgroupFsAdaptedName)
 	}
 	return cgroupPaths
-}
-
-// TODO(filbranden): This logic belongs in libcontainer/cgroup/systemd instead.
-// It should take a libcontainerconfigs.Cgroup.Path field (rather than Name and Parent)
-// and split it appropriately, using essentially the logic below.
-// This was done for cgroupfs in opencontainers/runc#497 but a counterpart
-// for systemd was never introduced.
-func updateSystemdCgroupInfo(cgroupConfig *libcontainerconfigs.Cgroup, cgroupName CgroupName) {
-	dir, base := path.Split(cgroupName.ToSystemd())
-	if dir == "/" {
-		dir = "-.slice"
-	} else {
-		dir = path.Base(dir)
-	}
-	cgroupConfig.Parent = dir
-	cgroupConfig.Name = base
 }
 
 // Exists checks if all subsystem cgroups already exist
@@ -309,11 +223,7 @@ func (m *cgroupManagerImpl) Destroy(cgroupConfig *CgroupConfig) error {
 	libcontainerCgroupConfig := &libcontainerconfigs.Cgroup{}
 	// libcontainer consumes a different field and expects a different syntax
 	// depending on the cgroup driver in use, so we need this conditional here.
-	if m.adapter.cgroupManagerType == libcontainerSystemd {
-		updateSystemdCgroupInfo(libcontainerCgroupConfig, cgroupConfig.Name)
-	} else {
-		libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
-	}
+	libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
 
 	manager, err := m.adapter.newManager(libcontainerCgroupConfig, cgroupPaths)
 	if err != nil {
@@ -464,11 +374,7 @@ func (m *cgroupManagerImpl) Update(cgroupConfig *CgroupConfig) error {
 	}
 	// libcontainer consumes a different field and expects a different syntax
 	// depending on the cgroup driver in use, so we need this conditional here.
-	if m.adapter.cgroupManagerType == libcontainerSystemd {
-		updateSystemdCgroupInfo(libcontainerCgroupConfig, cgroupConfig.Name)
-	} else {
-		libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
-	}
+	libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
 
 	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.SupportPodPidsLimit) && cgroupConfig.ResourceParameters != nil && cgroupConfig.ResourceParameters.PidsLimit != nil {
 		libcontainerCgroupConfig.PidsLimit = *cgroupConfig.ResourceParameters.PidsLimit
@@ -494,11 +400,7 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 	}
 	// libcontainer consumes a different field and expects a different syntax
 	// depending on the cgroup driver in use, so we need this conditional here.
-	if m.adapter.cgroupManagerType == libcontainerSystemd {
-		updateSystemdCgroupInfo(libcontainerCgroupConfig, cgroupConfig.Name)
-	} else {
-		libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
-	}
+	libcontainerCgroupConfig.Path = cgroupConfig.Name.ToCgroupfs()
 
 	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.SupportPodPidsLimit) && cgroupConfig.ResourceParameters != nil && cgroupConfig.ResourceParameters.PidsLimit != nil {
 		libcontainerCgroupConfig.PidsLimit = *cgroupConfig.ResourceParameters.PidsLimit
