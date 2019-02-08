@@ -30,6 +30,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/kubernetes/pkg/kubelet/types"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -39,6 +41,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
 	genericfeatures "k8s.io/apiserver/pkg/features"
@@ -315,13 +318,15 @@ func CreateKubeAPIServerConfig(
 		}
 	}
 
+	all, _ := types.GetValidatedSources([]string{types.AllSource})
+
 	capabilities.Initialize(capabilities.Capabilities{
 		AllowPrivileged: s.AllowPrivileged,
 		// TODO(vmarmol): Implement support for HostNetworkSources.
 		PrivilegedSources: capabilities.PrivilegedSources{
-			HostNetworkSources: []string{},
-			HostPIDSources:     []string{},
-			HostIPCSources:     []string{},
+			HostNetworkSources: all,
+			HostPIDSources:     all,
+			HostIPCSources:     all,
 		},
 		PerConnectionBandwidthLimitBytesPerSec: s.MaxConnectionBytesPerSec,
 	})
