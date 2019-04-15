@@ -183,6 +183,7 @@ func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan
 
 	if DefaultProxyDialerFn != nil {
 		completedOptions.KubeletConfig.Dial = DefaultProxyDialerFn
+		completedOptions.KubeletConfig.Proxy = http.ProxyURL(nil)
 	}
 
 	kubeAPIServerConfig, insecureServingInfo, serviceResolver, pluginInitializer, admissionPostStartHook, err := CreateKubeAPIServerConfig(completedOptions, nodeTunneler, proxyTransport)
