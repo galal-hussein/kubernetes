@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -61,6 +62,9 @@ type KubeletClientConfig struct {
 
 	// Lookup will give us a dialer if the egress selector is configured for it
 	Lookup egressselector.Lookup
+
+	// Proxy is a custom proxy function for the client
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 // ConnectionInfo provides the information needed to connect to a kubelet
@@ -119,6 +123,7 @@ func makeTransport(config *KubeletClientConfig, insecureSkipTLSVerify bool) (htt
 		rt = utilnet.SetOldTransportDefaults(&http.Transport{
 			DialContext:     dialer,
 			TLSClientConfig: tlsConfig,
+			Proxy:           config.Proxy,
 		})
 	}
 
