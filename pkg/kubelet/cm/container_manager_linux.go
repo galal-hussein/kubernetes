@@ -263,6 +263,10 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 	}
 	// Check if Cgroup-root actually exists on the node
 	if nodeConfig.CgroupsPerQOS {
+		if nodeConfig.CgroupDriver == noneDriver {
+			return nil, fmt.Errorf("invalid configuration: cgroups-per-qos is not supported for %s cgroup driver", nodeConfig.CgroupDriver)
+		}
+
 		if nodeConfig.Rootless {
 			// TODO(AkihiroSuda): support rootless
 			return nil, fmt.Errorf("invalid configuration: cgroups-per-qos is not supported for rootless")
