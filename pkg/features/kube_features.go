@@ -503,6 +503,18 @@ const (
 	// Enable the aggregated discovery timeout to ensure client responsiveness. Note this feature is present
 	// only for backward compatibility, it will be removed in the 1.17 release.
 	EnableAggregatedDiscoveryTimeout featuregate.Feature = "EnableAggregatedDiscoveryTimeout"
+
+	// owner: @AkihiroSuda
+	// alpha: v1.XX
+	//
+	// Enable support for "none" cgroup driver.
+	//
+	// The "none" driver is expected to be used in "rootless" mode until OCI/CRI runtime get
+	// support for cgroup2 (unified) mode with nsdelegate.
+	//
+	// Even after cgroup2 gets supported in the ecosystem, the "none" driver will remain
+	// because nested containers might not always get support for cgroup2 (via systemd).
+	SupportNoneCgroupDriver featuregate.Feature = "SupportNoneCgroupDriver"
 )
 
 func init() {
@@ -584,6 +596,7 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	EndpointSlice:                                  {Default: false, PreRelease: featuregate.Alpha},
 	EvenPodsSpread:                                 {Default: false, PreRelease: featuregate.Alpha},
 	StartupProbe:                                   {Default: false, PreRelease: featuregate.Alpha},
+	SupportNoneCgroupDriver:                        {Default: false, PreRelease: featuregate.Alpha},
 
 	// inherited features from generic apiserver, relisted here to get a conflict if it is changed
 	// unintentionally on either side:
