@@ -63,7 +63,7 @@ func init() {
 }
 
 // NewAPIServerCommand creates a *cobra.Command object with default parameters
-func NewAPIServerCommand() *cobra.Command {
+func NewAPIServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	_, featureGate := featuregate.DefaultComponentGlobalsRegistry.ComponentGlobalsOrRegister(
 		featuregate.DefaultKubeComponent, utilversion.DefaultBuildEffectiveVersion(), utilfeature.DefaultMutableFeatureGate)
 	s := options.NewServerRunOptions()
@@ -109,7 +109,7 @@ cluster's shared state through which all other components interact.`,
 			}
 			// add feature enablement metrics
 			featureGate.AddMetrics()
-			return Run(ctx, completedOptions)
+			return Run(cmd.Context(), completedOptions, stopCh)
 		},
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {
@@ -120,7 +120,6 @@ cluster's shared state through which all other components interact.`,
 			return nil
 		},
 	}
-	cmd.SetContext(ctx)
 
 	fs := cmd.Flags()
 	namedFlagSets := s.Flags()
@@ -138,7 +137,7 @@ cluster's shared state through which all other components interact.`,
 }
 
 // Run runs the specified APIServer.  This should never exit.
-func Run(ctx context.Context, opts options.CompletedOptions) error {
+func Run(ctx context.Context, opts options.CompletedOptions, stopCh <-chan struct{}) error {
 	// To help debugging, immediately log version
 	klog.Infof("Version: %+v", utilversion.Get())
 
