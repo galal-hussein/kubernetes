@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/pflag"
 
+	"k8s.io/apiserver/pkg/server"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
 	_ "k8s.io/component-base/logs/json/register"          // for JSON log format registration
@@ -38,7 +39,7 @@ func main() {
 
 	pflag.CommandLine.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)
 
-	command := app.NewAPIServerCommand()
+	command := app.NewAPIServerCommand(server.SetupSignalHandler())
 
 	logs.InitLogs()
 	defer logs.FlushLogs()

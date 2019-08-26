@@ -26,6 +26,7 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	_ "k8s.io/component-base/logs/json/register" // for JSON log format registration
 	_ "k8s.io/component-base/metrics/prometheus/restclient"
@@ -36,7 +37,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	command := app.NewKubeletCommand()
+	command := app.NewKubeletCommand(server.SetupSignalContext())
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
