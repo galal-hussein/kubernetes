@@ -27,9 +27,6 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/kubectl/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubectl/cmd"
-
-	// Import to initialize client auth plugins.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func main() {
