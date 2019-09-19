@@ -149,6 +149,13 @@ cluster's shared state through which all other components interact.`,
 	return cmd
 }
 
+type startupConfig struct {
+	Handler       http.Handler
+	Authenticator authenticator.Request
+}
+
+var StartupConfig = make(chan startupConfig, 1)
+
 // Run runs the specified APIServer.  This should never exit.
 func Run(completeOptions completedServerRunOptions, stopCh <-chan struct{}) error {
 	// To help debugging, immediately log version
@@ -216,6 +223,12 @@ func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan
 			return nil, err
 		}
 	}
+
+	StartupConfig <- startupConfig{
+		Handler:       aggregatorServer.GenericAPIServer.Handler,
+		Authenticator: kubeAPIServerConfig.GenericConfig.Authentication.Authenticator,
+	}
+	close(StartupConfig)
 
 	return aggregatorServer, nil
 }
