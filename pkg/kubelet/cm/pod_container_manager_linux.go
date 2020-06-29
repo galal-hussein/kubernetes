@@ -291,7 +291,8 @@ func (m *podContainerManagerImpl) GetAllPodsFromCgroups() (map[types.UID]CgroupN
 // enabled, so Exists() returns true always as the cgroupRoot
 // is expected to always exist.
 type podContainerManagerNoop struct {
-	cgroupRoot CgroupName
+	cgroupRoot      CgroupName
+	rootlessSystemd bool
 }
 
 // Make sure that podContainerManagerStub implements the PodContainerManager interface
@@ -306,6 +307,10 @@ func (m *podContainerManagerNoop) EnsureExists(_ *v1.Pod) error {
 }
 
 func (m *podContainerManagerNoop) GetPodContainerName(_ *v1.Pod) (CgroupName, string) {
+	if m.rootlessSystemd {
+		// "user.slice" is set to PodConfig.Linux.CgroupParent
+		return m.cgroupRoot, "user.slice"
+	}
 	return m.cgroupRoot, ""
 }
 

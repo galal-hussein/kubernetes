@@ -31,6 +31,7 @@ import (
 	cgroupfs2 "github.com/opencontainers/runc/libcontainer/cgroups/fs2"
 	cgroupsystemd "github.com/opencontainers/runc/libcontainer/cgroups/systemd"
 	libcontainerconfigs "github.com/opencontainers/runc/libcontainer/configs"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog/v2"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
@@ -131,18 +132,22 @@ func IsSystemdStyleName(name string) bool {
 type libcontainerAdapter struct {
 	// cgroupManagerType defines how to interface with libcontainer
 	cgroupManagerType libcontainerCgroupManagerType
+	rootless          bool
 }
 
 // newLibcontainerAdapter returns a configured libcontainerAdapter for specified manager.
 // it does any initialization required by that manager to function.
-func newLibcontainerAdapter(cgroupManagerType libcontainerCgroupManagerType) *libcontainerAdapter {
-	return &libcontainerAdapter{cgroupManagerType: cgroupManagerType}
+func newLibcontainerAdapter(cgroupManagerType libcontainerCgroupManagerType, rootless bool) *libcontainerAdapter {
+	return &libcontainerAdapter{cgroupManagerType: cgroupManagerType, rootless: rootless}
 }
 
 // newManager returns an implementation of cgroups.Manager
 func (l *libcontainerAdapter) newManager(cgroups *libcontainerconfigs.Cgroup, paths map[string]string) (libcontainercgroups.Manager, error) {
 	switch l.cgroupManagerType {
 	case libcontainerCgroupfs:
+		if l.rootless {
+			return nil, fmt.Errorf("cgroup manager %v does not support rootless", l.cgroupManagerType)
+		}
 		if libcontainercgroups.IsCgroup2UnifiedMode() {
 			return cgroupfs2.NewManager(cgroups, paths["memory"], false)
 		}
@@ -153,7 +158,10 @@ func (l *libcontainerAdapter) newManager(cgroups *libcontainerconfigs.Cgroup, pa
 			panic("systemd cgroup manager not available")
 		}
 		if libcontainercgroups.IsCgroup2UnifiedMode() {
-			return cgroupsystemd.NewUnifiedManager(cgroups, paths["memory"], false), nil
+			return cgroupsystemd.NewUnifiedManager(cgroups, paths["memory"], l.rootless), nil
+		}
+		if l.rootless {
+			return nil, fmt.Errorf("cgroup manager %v requires cgroup v2 for rootless", l.cgroupManagerType)
 		}
 		return cgroupsystemd.NewLegacyManager(cgroups, paths), nil
 	}
@@ -187,15 +195,18 @@ type cgroupManagerImpl struct {
 var _ CgroupManager = &cgroupManagerImpl{}
 
 // NewCgroupManager is a factory method that returns a CgroupManager
-func NewCgroupManager(cs *CgroupSubsystems, cgroupDriver string) CgroupManager {
+func NewCgroupManager(cs *CgroupSubsystems, cgroupDriver string, rootless bool) (CgroupManager, error) {
 	managerType := libcontainerCgroupfs
 	if cgroupDriver == string(libcontainerSystemd) {
 		managerType = libcontainerSystemd
 	}
+	if rootless && !utilfeature.DefaultFeatureGate.Enabled(kubefeatures.Rootless) {
+		return nil, fmt.Errorf("rootless requires Rootless feature gate")
+	}
 	return &cgroupManagerImpl{
 		subsystems: cs,
-		adapter:    newLibcontainerAdapter(managerType),
-	}
+		adapter:    newLibcontainerAdapter(managerType, rootless),
+	}, nil
 }
 
 // Name converts the cgroup to the driver specific value in cgroupfs form.
@@ -464,18 +475,20 @@ func propagateControllers(path string) error {
 }
 
 // setResourcesV2 sets cgroup resource limits on cgroup v2
-func setResourcesV2(cgroupConfig *libcontainerconfigs.Cgroup) error {
+func setResourcesV2(cgroupConfig *libcontainerconfigs.Cgroup, rootless bool) error {
 	if err := propagateControllers(cgroupConfig.Path); err != nil {
 		return err
 	}
-	cgroupConfig.Resources.Devices = []*libcontainerconfigs.DeviceRule{
-		{
-			Type:        'a',
-			Permissions: "rwm",
-			Allow:       true,
-			Minor:       libcontainerconfigs.Wildcard,
-			Major:       libcontainerconfigs.Wildcard,
-		},
+	if !rootless {
+		cgroupConfig.Resources.Devices = []*libcontainerconfigs.DeviceRule{
+			{
+				Type:        'a',
+				Permissions: "rwm",
+				Allow:       true,
+				Minor:       libcontainerconfigs.Wildcard,
+				Major:       libcontainerconfigs.Wildcard,
+			},
+		}
 	}
 	cgroupConfig.Resources.SkipDevices = true
 
@@ -487,7 +500,7 @@ func setResourcesV2(cgroupConfig *libcontainerconfigs.Cgroup) error {
 		klog.V(6).Infof("Optional subsystem not supported: hugetlb")
 	}
 
-	manager, err := cgroupfs2.NewManager(cgroupConfig, filepath.Join(cmutil.CgroupRoot, cgroupConfig.Path), false)
+	manager, err := cgroupfs2.NewManager(cgroupConfig, filepath.Join(cmutil.CgroupRoot, cgroupConfig.Path), rootless)
 	if err != nil {
 		return fmt.Errorf("failed to create cgroup v2 manager: %v", err)
 	}
@@ -593,7 +606,8 @@ func (m *cgroupManagerImpl) Update(cgroupConfig *CgroupConfig) error {
 	}
 
 	if unified {
-		if err := setResourcesV2(libcontainerCgroupConfig); err != nil {
+		rootless := m.adapter.rootless
+		if err := setResourcesV2(libcontainerCgroupConfig, rootless); err != nil {
 			return fmt.Errorf("failed to set resources for cgroup %v: %v", cgroupConfig.Name, err)
 		}
 	} else {
@@ -749,7 +763,7 @@ func (m *cgroupManagerImpl) GetResourceStats(name CgroupName) (*ResourceStats, e
 	var stats *libcontainercgroups.Stats
 	if libcontainercgroups.IsCgroup2UnifiedMode() {
 		cgroupPath := m.buildCgroupUnifiedPath(name)
-		manager, err := cgroupfs2.NewManager(nil, cgroupPath, false)
+		manager, err := cgroupfs2.NewManager(nil, cgroupPath, m.adapter.rootless)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create cgroup v2 manager: %v", err)
 		}

@@ -139,6 +139,7 @@ type NodeConfig struct {
 	EnforceCPULimits                      bool
 	CPUCFSQuotaPeriod                     time.Duration
 	ExperimentalTopologyManagerPolicy     string
+	Rootless                              bool
 }
 
 type NodeAllocatableConfig struct {

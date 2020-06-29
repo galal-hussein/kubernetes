@@ -714,6 +714,12 @@ type KubeletConfiguration struct {
 	// Default: "Watch"
 	// +optional
 	ConfigMapAndSecretChangeDetectionStrategy ResourceChangeDetectionStrategy `json:"configMapAndSecretChangeDetectionStrategy,omitempty"`
+	// Rootless enables the rootless cgroup manager.
+	// Requires cgroup v2 and systemd.
+	// Requires the Rootless feature gate to be enabled.
+	// Default: false
+	// +optional
+	Rootless bool `json:"rootless,omitempty"`
 
 	/* the following fields are meant for Node Allocatable */
 

@@ -60,6 +60,7 @@ func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 			obj.ImageGCHighThresholdPercent = 85
 			obj.ImageGCLowThresholdPercent = 80
 			obj.KernelMemcgNotification = false
+			obj.Rootless = false
 			obj.MaxOpenFiles = 1000000
 			obj.MaxPods = 110
 			obj.PodPidsLimit = -1

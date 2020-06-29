@@ -337,6 +337,10 @@ type KubeletConfiguration struct {
 	// kernelMemcgNotification if enabled, the kubelet will integrate with the kernel memcg
 	// notification to determine if memory eviction thresholds are crossed rather than polling.
 	KernelMemcgNotification bool
+	// Rootless enables the rootless cgroup manager.
+	// Requires cgroup v2 and systemd.
+	// Requires the Rootless feature gate to be enabled.
+	Rootless bool
 
 	/* the following fields are meant for Node Allocatable */
 

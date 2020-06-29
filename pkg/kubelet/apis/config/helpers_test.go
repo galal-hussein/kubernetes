@@ -221,6 +221,7 @@ var (
 		"RegistryBurst",
 		"RegistryPullQPS",
 		"ReservedSystemCPUs",
+		"Rootless",
 		"RuntimeRequestTimeout.Duration",
 		"RunOnce",
 		"SerializeImagePulls",

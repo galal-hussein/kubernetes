@@ -257,9 +257,17 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 
 	// Turn CgroupRoot from a string (in cgroupfs path format) to internal CgroupName
 	cgroupRoot := ParseCgroupfsToCgroupName(nodeConfig.CgroupRoot)
-	cgroupManager := NewCgroupManager(subsystems, nodeConfig.CgroupDriver)
+	cgroupManager, err := NewCgroupManager(subsystems, nodeConfig.CgroupDriver, nodeConfig.Rootless)
+	if err != nil {
+		return nil, err
+	}
 	// Check if Cgroup-root actually exists on the node
 	if nodeConfig.CgroupsPerQOS {
+		if nodeConfig.Rootless {
+			// TODO(AkihiroSuda): support rootless
+			return nil, fmt.Errorf("invalid configuration: cgroups-per-qos is not supported for rootless")
+		}
+
 		// this does default to / when enabled, but this tests against regressions.
 		if nodeConfig.CgroupRoot == "" {
 			return nil, fmt.Errorf("invalid configuration: cgroups-per-qos was specified and cgroup-root was not specified. To enable the QoS cgroup hierarchy you need to specify a valid cgroup-root")
@@ -360,7 +368,8 @@ func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
 		}
 	}
 	return &podContainerManagerNoop{
-		cgroupRoot: cm.cgroupRoot,
+		cgroupRoot:      cm.cgroupRoot,
+		rootlessSystemd: cm.NodeConfig.Rootless && cm.NodeConfig.CgroupDriver == "systemd",
 	}
 }
 
@@ -503,6 +512,9 @@ func (cm *containerManagerImpl) setupNode(activePods ActivePodsFunc) error {
 		if cm.SystemCgroupsName == "/" {
 			return fmt.Errorf("system container cannot be root (\"/\")")
 		}
+		if cm.Rootless {
+			return fmt.Errorf("rootless does not support SystemCgroupsName")
+		}
 		cont, err := newSystemCgroups(cm.SystemCgroupsName)
 		if err != nil {
 			return err
@@ -514,6 +526,9 @@ func (cm *containerManagerImpl) setupNode(activePods ActivePodsFunc) error {
 	}
 
 	if cm.KubeletCgroupsName != "" {
+		if cm.Rootless {
+			return fmt.Errorf("rootless does not support KubeletCgroupsName")
+		}
 		cont, err := newSystemCgroups(cm.KubeletCgroupsName)
 		if err != nil {
 			return err
