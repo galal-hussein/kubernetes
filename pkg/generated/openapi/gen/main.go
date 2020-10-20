@@ -15,7 +15,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 
-	_ "k8s.io/kubernetes/pkg/master" // install APIs
+	_ "k8s.io/kubernetes/pkg/controlplane" // install APIs
 )
 
 var template = `
