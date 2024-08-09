@@ -982,6 +982,13 @@ const (
 	//
 	// Allows recursive read-only mounts.
 	RecursiveReadOnlyMounts featuregate.Feature = "RecursiveReadOnlyMounts"
+
+	// owner: @galal-hussein
+	// kep: none
+	// alpha: v1.30
+	//
+	// Allow k3k virtual cluster features
+	K3KCluster featuregate.Feature = "K3KCluster"
 )
 
 func init() {
@@ -1331,4 +1338,7 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	StorageNamespaceIndex: {Default: true, PreRelease: featuregate.Beta},
 
 	RecursiveReadOnlyMounts: {Default: false, PreRelease: featuregate.Alpha},
+
+	// K3k cluster feature-gate
+	K3KCluster: {Default: false, PreRelease: featuregate.Alpha},
 }

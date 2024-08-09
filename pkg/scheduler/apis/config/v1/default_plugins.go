@@ -78,6 +78,11 @@ func applyFeatureGates(config *v1.Plugins) {
 			}
 		}
 	}
+	if utilfeature.DefaultFeatureGate.Enabled(features.K3KCluster) {
+		// if k3kCluster feature gate is enabled then add the cluster limit scheduler
+		// plugin to the default-scheduler
+		config.PreFilter.Enabled = append(config.PreFilter.Enabled, v1.Plugin{Name: names.ClusterLimit})
+	}
 }
 
 // mergePlugins merges the custom set into the given default one, handling disabled sets.

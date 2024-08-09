@@ -19,6 +19,7 @@ package plugins
 import (
 	"k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/features"
+	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/clusterlimit"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultbinder"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultpreemption"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/dynamicresources"
@@ -81,5 +82,8 @@ func NewInTreeRegistry() runtime.Registry {
 		schedulinggates.Name:                 schedulinggates.New,
 	}
 
+	if feature.DefaultFeatureGate.Enabled(features.K3KCluster) {
+		registry.Register(clusterlimit.Name, clusterlimit.New)
+	}
 	return registry
 }

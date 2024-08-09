@@ -40,4 +40,5 @@ const (
 	VolumeBinding                   = "VolumeBinding"
 	VolumeRestrictions              = "VolumeRestrictions"
 	VolumeZone                      = "VolumeZone"
+	ClusterLimit                    = "ClusterLimit"
 )
