@@ -8,8 +8,8 @@ fi
 
 if [ -n "$(git tag -l $1)" ]; then
     echo $1 tag exists run
-    echo "    " git tag -d $1
-    exit 1
+    echo "removing tag $1"
+    git tag -d $1
 fi
 
 # The submodule tagging screws up ./hack/update-codegen.sh so make sure the script find a valid

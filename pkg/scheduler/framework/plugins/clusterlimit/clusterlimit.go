@@ -7,22 +7,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
-const (
-	Name = "ClusterLimit"
-)
-
-var scheme = runtime.NewScheme()
-
-func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-}
+const Name = "ClusterLimit"
 
 type ClusterLimit struct {
 	sync.RWMutex
@@ -31,16 +21,16 @@ type ClusterLimit struct {
 	nodeLister corelisters.NodeLister
 }
 
+var _ framework.PreFilterPlugin = &ClusterLimit{}
+
 func (c *ClusterLimit) Name() string {
 	return Name
 }
 
-func New(ctx context.Context, obj runtime.Object, handle framework.Handle) (framework.Plugin, error) {
-
-	logger := klog.FromContext(ctx)
+func New(_ context.Context, _ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 
 	// cast obj to clusterLimitArgs
-	logger.V(5).Info("creating new ClusterLimit plugin")
+	klog.V(5).Info("creating new ClusterLimit plugin")
 	// clusterLimitArgs, err := getArgs(obj)
 	// if err != nil {
 	// 	return nil, err
