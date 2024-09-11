@@ -68,6 +68,7 @@ import (
 	"k8s.io/kubernetes/pkg/features"
 	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
+	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 )
 
@@ -150,6 +151,12 @@ type startupConfig struct {
 
 var StartupConfig = make(chan startupConfig, 1)
 
+type admissionConfig struct {
+	Admissions *kubeoptions.AdmissionOptions
+}
+
+var AdmissionConfig = make(chan admissionConfig, 1)
+
 // Run runs the specified APIServer.  This should never exit.
 func Run(opts options.CompletedOptions, stopCh <-chan struct{}) error {
 	// To help debugging, immediately log version
@@ -205,6 +212,9 @@ func CreateServerChain(config CompletedConfig) (*aggregatorapiserver.APIAggregat
 	}
 	close(StartupConfig)
 
+	AdmissionConfig <- admissionConfig{
+		Admissions: config.Options.CompletedOptions.Admission,
+	}
 	return aggregatorServer, nil
 }
 
