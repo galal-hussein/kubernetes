@@ -207,10 +207,6 @@ func CreateServerChain(config CompletedConfig) (*aggregatorapiserver.APIAggregat
 		Authenticator: config.ControlPlane.GenericConfig.Authentication.Authenticator,
 	}
 	close(StartupConfig)
-
-	AdmissionConfig <- admissionConfig{
-		Admissions: config.Options.CompletedOptions.Admission,
-	}
 	return aggregatorServer, nil
 }
 
