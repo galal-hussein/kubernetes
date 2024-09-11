@@ -76,9 +76,17 @@ func init() {
 	utilruntime.Must(logsapi.AddFeatureGates(utilfeature.DefaultMutableFeatureGate))
 }
 
+var AdmissionConfig *kubeoptions.AdmissionOptions
+
 // NewAPIServerCommand creates a *cobra.Command object with default parameters
 func NewAPIServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	s := options.NewServerRunOptions()
+	// set default options
+	completedOptions, err := s.Complete()
+	if err != nil {
+		panic(err)
+	}
+	AdmissionConfig = completedOptions.Admission
 	cmd := &cobra.Command{
 		Use: "kube-apiserver",
 		Long: `The Kubernetes API server validates and configures data
@@ -104,12 +112,6 @@ cluster's shared state through which all other components interact.`,
 				return err
 			}
 			cliflag.PrintFlags(fs)
-
-			// set default options
-			completedOptions, err := s.Complete()
-			if err != nil {
-				return err
-			}
 
 			// validate options
 			if errs := completedOptions.Validate(); len(errs) != 0 {
@@ -150,12 +152,6 @@ type startupConfig struct {
 }
 
 var StartupConfig = make(chan startupConfig, 1)
-
-type admissionConfig struct {
-	Admissions *kubeoptions.AdmissionOptions
-}
-
-var AdmissionConfig = make(chan admissionConfig, 1)
 
 // Run runs the specified APIServer.  This should never exit.
 func Run(opts options.CompletedOptions, stopCh <-chan struct{}) error {
