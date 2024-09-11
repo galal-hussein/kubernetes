@@ -151,11 +151,7 @@ type startupConfig struct {
 
 var StartupConfig = make(chan startupConfig, 1)
 
-type admissionConfig struct {
-	Admissions *kubeoptions.AdmissionOptions
-}
-
-var AdmissionConfig = make(chan admissionConfig, 1)
+var AdmissionConfig *kubeoptions.AdmissionOptions
 
 // Run runs the specified APIServer.  This should never exit.
 func Run(opts options.CompletedOptions, stopCh <-chan struct{}) error {
@@ -212,9 +208,8 @@ func CreateServerChain(config CompletedConfig) (*aggregatorapiserver.APIAggregat
 	}
 	close(StartupConfig)
 
-	AdmissionConfig <- admissionConfig{
-		Admissions: config.Options.CompletedOptions.Admission,
-	}
+	AdmissionConfig = config.Options.CompletedOptions.Admission
+
 	return aggregatorServer, nil
 }
 
