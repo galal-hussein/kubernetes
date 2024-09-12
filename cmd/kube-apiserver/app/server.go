@@ -68,6 +68,7 @@ import (
 	"k8s.io/kubernetes/pkg/features"
 	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
+	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 )
 
@@ -146,6 +147,7 @@ cluster's shared state through which all other components interact.`,
 type startupConfig struct {
 	Handler       http.Handler
 	Authenticator authenticator.Request
+	Admission     *kubeoptions.AdmissionOptions
 }
 
 var StartupConfig = make(chan startupConfig, 1)
@@ -202,6 +204,7 @@ func CreateServerChain(config CompletedConfig) (*aggregatorapiserver.APIAggregat
 	StartupConfig <- startupConfig{
 		Handler:       aggregatorServer.GenericAPIServer.Handler,
 		Authenticator: config.ControlPlane.GenericConfig.Authentication.Authenticator,
+		Admission:     config.Options.Admission,
 	}
 	close(StartupConfig)
 
