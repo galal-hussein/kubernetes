@@ -60,7 +60,7 @@ func NewAPIServer(storageConfig storagebackend.Config) *APIServer {
 func (a *APIServer) Start() error {
 	const tokenFilePath = "known_tokens.csv"
 
-	o := options.NewServerRunOptions()
+	o := options.NewServerRunOptions(nil)
 	o.Etcd.StorageConfig = a.storageConfig
 	_, ipnet, err := netutils.ParseCIDRSloppy(clusterIPRange)
 	if err != nil {

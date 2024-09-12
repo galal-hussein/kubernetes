@@ -35,6 +35,7 @@ import (
 	"k8s.io/klog/v2"
 	netutil "k8s.io/utils/net"
 
+	"k8s.io/apiserver/pkg/admission"
 	_ "k8s.io/kubernetes/pkg/features"
 	kubeauthenticator "k8s.io/kubernetes/pkg/kubeapiserver/authenticator"
 	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
@@ -96,14 +97,14 @@ type CompletedOptions struct {
 }
 
 // NewOptions creates a new ServerRunOptions object with default parameters
-func NewOptions() *Options {
+func NewOptions(extraPlugins map[string]func(plugins *admission.Plugins)) *Options {
 	s := Options{
 		GenericServerRunOptions: genericoptions.NewServerRunOptions(),
 		Etcd:                    genericoptions.NewEtcdOptions(storagebackend.NewDefaultConfig(kubeoptions.DefaultEtcdPathPrefix, nil)),
 		SecureServing:           kubeoptions.NewSecureServingOptions(),
 		Audit:                   genericoptions.NewAuditOptions(),
 		Features:                genericoptions.NewFeatureOptions(),
-		Admission:               kubeoptions.NewAdmissionOptions(),
+		Admission:               kubeoptions.NewAdmissionOptions(extraPlugins),
 		Authentication:          kubeoptions.NewBuiltInAuthenticationOptions().WithAll(),
 		Authorization:           kubeoptions.NewBuiltInAuthorizationOptions(),
 		APIEnablement:           genericoptions.NewAPIEnablementOptions(),

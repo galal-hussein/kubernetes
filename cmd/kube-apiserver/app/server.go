@@ -34,7 +34,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	genericapifilters "k8s.io/apiserver/pkg/endpoints/filters"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -59,6 +58,7 @@ import (
 	aggregatorapiserver "k8s.io/kube-aggregator/pkg/apiserver"
 	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
 
+	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/capabilities"
@@ -68,6 +68,7 @@ import (
 	"k8s.io/kubernetes/pkg/features"
 	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
+	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 )
 
@@ -75,9 +76,14 @@ func init() {
 	utilruntime.Must(logsapi.AddFeatureGates(utilfeature.DefaultMutableFeatureGate))
 }
 
+var (
+	AdmissionReconfigCh = make(chan bool, 1)
+	AdmissionOpts       *kubeoptions.AdmissionOptions
+)
+
 // NewAPIServerCommand creates a *cobra.Command object with default parameters
-func NewAPIServerCommand(stopCh <-chan struct{}) *cobra.Command {
-	s := options.NewServerRunOptions()
+func NewAPIServerCommand(stopCh <-chan struct{}, extraPlugins map[string]func(*admission.Plugins)) *cobra.Command {
+	s := options.NewServerRunOptions(extraPlugins)
 	cmd := &cobra.Command{
 		Use: "kube-apiserver",
 		Long: `The Kubernetes API server validates and configures data
@@ -116,6 +122,9 @@ cluster's shared state through which all other components interact.`,
 			}
 			// add feature enablement metrics
 			utilfeature.DefaultMutableFeatureGate.AddMetrics()
+
+			// wait on AdmissionReconfigCh with timeout
+
 			return Run(completedOptions, stopCh)
 		},
 		Args: func(cmd *cobra.Command, args []string) error {

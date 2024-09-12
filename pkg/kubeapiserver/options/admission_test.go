@@ -26,7 +26,7 @@ import (
 
 func TestValidate(t *testing.T) {
 	// 1. Both `--admission-control` and `--enable-admission-plugins` are specified
-	options := NewAdmissionOptions()
+	options := NewAdmissionOptions(nil)
 	options.PluginNames = []string{"ServiceAccount"}
 	options.GenericAdmission.EnablePlugins = []string{"NodeRestriction"}
 	if len(options.Validate()) == 0 {
@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	// 2. Both `--admission-control` and `--disable-admission-plugins` are specified
-	options = NewAdmissionOptions()
+	options = NewAdmissionOptions(nil)
 	options.PluginNames = []string{"ServiceAccount"}
 	options.GenericAdmission.DisablePlugins = []string{"NodeRestriction"}
 	if len(options.Validate()) == 0 {
@@ -42,14 +42,14 @@ func TestValidate(t *testing.T) {
 	}
 
 	// 3. PluginNames is not registered
-	options = NewAdmissionOptions()
+	options = NewAdmissionOptions(nil)
 	options.PluginNames = []string{"pluginA"}
 	if len(options.Validate()) == 0 {
 		t.Errorf("Expect error, but got none")
 	}
 
 	// 4. PluginNames is not valid
-	options = NewAdmissionOptions()
+	options = NewAdmissionOptions(nil)
 	options.PluginNames = []string{"ServiceAccount"}
 	if errs := options.Validate(); len(errs) > 0 {
 		t.Errorf("Unexpected err: %v", errs)
@@ -102,7 +102,7 @@ func TestAdmissionOptionsAddFlags(t *testing.T) {
 		"--admission-control-config-file=admission_control_config.yaml",
 	}
 
-	opts := NewAdmissionOptions()
+	opts := NewAdmissionOptions(nil)
 	pf := pflag.NewFlagSet("test-admission-opts", pflag.ContinueOnError)
 	opts.AddFlags(pf)
 

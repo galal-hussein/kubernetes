@@ -46,7 +46,7 @@ import (
 
 func TestAddFlags(t *testing.T) {
 	fs := pflag.NewFlagSet("addflagstest", pflag.PanicOnError)
-	s := NewServerRunOptions()
+	s := NewServerRunOptions(nil)
 	for _, f := range s.Flags().FlagSets {
 		fs.AddFlagSet(f)
 	}

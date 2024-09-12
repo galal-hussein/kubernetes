@@ -51,7 +51,7 @@ type AdmissionOptions struct {
 //	Provides the list of RecommendedPluginOrder that holds sane values
 //	that can be used by servers that don't care about admission chain.
 //	Servers that do care can overwrite/append that field after creation.
-func NewAdmissionOptions() *AdmissionOptions {
+func NewAdmissionOptions(extraPlugins map[string]func(plugins *admission.Plugins)) *AdmissionOptions {
 	options := genericoptions.NewAdmissionOptions()
 	// register all admission plugins
 	RegisterAllAdmissionPlugins(options.Plugins)
@@ -60,6 +60,10 @@ func NewAdmissionOptions() *AdmissionOptions {
 	// set DefaultOffPlugins
 	options.DefaultOffPlugins = DefaultOffAdmissionPlugins()
 
+	for pluginName, register := range extraPlugins {
+		register(options.Plugins)
+		options.RecommendedPluginOrder = append(options.RecommendedPluginOrder, pluginName)
+	}
 	return &AdmissionOptions{
 		GenericAdmission: options,
 	}

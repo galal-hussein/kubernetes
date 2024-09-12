@@ -174,7 +174,7 @@ func StartTestServer(t Logger, instanceOptions *TestServerInstanceOptions, custo
 
 	fs := pflag.NewFlagSet("test", pflag.PanicOnError)
 
-	s := options.NewServerRunOptions()
+	s := options.NewServerRunOptions(nil)
 	for _, f := range s.Flags().FlagSets {
 		fs.AddFlagSet(f)
 	}

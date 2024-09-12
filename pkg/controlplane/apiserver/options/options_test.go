@@ -42,7 +42,7 @@ import (
 
 func TestAddFlags(t *testing.T) {
 	fs := pflag.NewFlagSet("addflagstest", pflag.PanicOnError)
-	s := NewOptions()
+	s := NewOptions(nil)
 	var fss cliflag.NamedFlagSets
 	s.AddFlags(&fss)
 	for _, f := range fss.FlagSets {

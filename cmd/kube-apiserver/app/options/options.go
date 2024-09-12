@@ -25,6 +25,7 @@ import (
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	cliflag "k8s.io/component-base/cli/flag"
 
+	"k8s.io/apiserver/pkg/admission"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/cluster/ports"
 	controlplaneapiserver "k8s.io/kubernetes/pkg/controlplane/apiserver/options"
@@ -63,9 +64,9 @@ type Extra struct {
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters
-func NewServerRunOptions() *ServerRunOptions {
+func NewServerRunOptions(extraPlugins map[string]func(*admission.Plugins)) *ServerRunOptions {
 	s := ServerRunOptions{
-		Options:       controlplaneapiserver.NewOptions(),
+		Options:       controlplaneapiserver.NewOptions(extraPlugins),
 		CloudProvider: kubeoptions.NewCloudProviderOptions(),
 
 		Extra: Extra{

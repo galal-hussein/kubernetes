@@ -55,7 +55,7 @@ func main() {
 	switch module {
 	case "kube-apiserver":
 		// generate docs for kube-apiserver
-		apiserver := apiservapp.NewAPIServerCommand(server.SetupSignalHandler())
+		apiserver := apiservapp.NewAPIServerCommand(server.SetupSignalHandler(), nil)
 		doc.GenMarkdownTree(apiserver, outDir)
 	case "kube-controller-manager":
 		// generate docs for kube-controller-manager

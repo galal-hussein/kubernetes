@@ -88,7 +88,7 @@ func StartRealAPIServerOrDie(t *testing.T, configFuncs ...func(*options.ServerRu
 		t.Fatalf("write file %s failed: %v", saSigningKeyFile.Name(), err)
 	}
 
-	opts := options.NewServerRunOptions()
+	opts := options.NewServerRunOptions(nil)
 	opts.Options.SecureServing.Listener = listener
 	opts.Options.SecureServing.ServerCert.CertDirectory = certDir
 	opts.Options.ServiceAccountSigningKeyFile = saSigningKeyFile.Name()
