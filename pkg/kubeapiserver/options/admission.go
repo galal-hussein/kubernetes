@@ -18,6 +18,7 @@ package options
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -26,6 +27,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
+	mutatingwebhook "k8s.io/apiserver/pkg/admission/plugin/webhook/mutating"
 	"k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/client-go/informers"
@@ -45,9 +47,16 @@ type AdmissionOptions struct {
 var AdmissionPlugins map[string]func(*admission.Plugins)
 
 func (a *AdmissionOptions) WithPlugins(plugins map[string]func(*admission.Plugins)) *AdmissionOptions {
+	var index int
+	// get index of mutatingwebhook plugin
+	for i, pluginName := range AllOrderedPlugins {
+		if pluginName == mutatingwebhook.PluginName {
+			index = i
+		}
+	}
 	for pluginName, register := range plugins {
-		a.GenericAdmission.RecommendedPluginOrder = append(a.GenericAdmission.RecommendedPluginOrder, pluginName)
-		a.GenericAdmission.DefaultOffPlugins = sets.New(AllOrderedPlugins...).Insert(pluginName)
+		a.GenericAdmission.RecommendedPluginOrder = slices.Insert(a.GenericAdmission.RecommendedPluginOrder, index-1, pluginName)
+		a.GenericAdmission.DefaultOffPlugins = a.GenericAdmission.DefaultOffPlugins.Insert(pluginName)
 		register(a.GenericAdmission.Plugins)
 	}
 	return a
