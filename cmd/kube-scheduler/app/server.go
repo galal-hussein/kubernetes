@@ -77,7 +77,7 @@ func init() {
 type Option func(runtime.Registry) error
 
 // NewSchedulerCommand creates a *cobra.Command object with default parameters and registryOptions
-func NewSchedulerCommand(registryOptions ...Option) *cobra.Command {
+func NewSchedulerCommand(stopCh <-chan struct{}, registryOptions ...Option) *cobra.Command {
 	// explicitly register (if not already registered) the kube effective version and feature gate in DefaultComponentGlobalsRegistry,
 	// which will be used in NewOptions.
 	_, _ = featuregate.DefaultComponentGlobalsRegistry.ComponentGlobalsOrRegister(

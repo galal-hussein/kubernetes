@@ -67,7 +67,7 @@ func main() {
 		doc.GenMarkdownTree(proxy, outDir)
 	case "kube-scheduler":
 		// generate docs for kube-scheduler
-		scheduler := schapp.NewSchedulerCommand()
+		scheduler := schapp.NewSchedulerCommand(server.SetupSignalHandler())
 		doc.GenMarkdownTree(scheduler, outDir)
 	case "kubelet":
 		// generate docs for kubelet

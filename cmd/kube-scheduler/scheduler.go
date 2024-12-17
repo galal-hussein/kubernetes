@@ -19,6 +19,7 @@ package main
 import (
 	"os"
 
+	"k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/cli"
 	_ "k8s.io/component-base/logs/json/register" // for JSON log format registration
 	_ "k8s.io/component-base/metrics/prometheus/clientgo"
@@ -27,7 +28,7 @@ import (
 )
 
 func main() {
-	command := app.NewSchedulerCommand()
+	command := app.NewSchedulerCommand(server.SetupSignalHandler())
 	code := cli.Run(command)
 	os.Exit(code)
 }
