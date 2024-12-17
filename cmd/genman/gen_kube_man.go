@@ -84,7 +84,7 @@ func main() {
 		}
 	case "kube-scheduler":
 		// generate manpage for kube-scheduler
-		scheduler := schapp.NewSchedulerCommand()
+		scheduler := schapp.NewSchedulerCommand(server.SetupSignalHandler())
 		genMarkdown(scheduler, "", outDir)
 		for _, c := range scheduler.Commands() {
 			genMarkdown(c, "kube-scheduler", outDir)

@@ -34,7 +34,6 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	genericapifilters "k8s.io/apiserver/pkg/endpoints/filters"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
-	"k8s.io/apiserver/pkg/server"
 	genericfilters "k8s.io/apiserver/pkg/server/filters"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/mux"
@@ -77,7 +76,7 @@ func init() {
 type Option func(runtime.Registry) error
 
 // NewSchedulerCommand creates a *cobra.Command object with default parameters and registryOptions
-func NewSchedulerCommand(registryOptions ...Option) *cobra.Command {
+func NewSchedulerCommand(stopCh <-chan struct{}, registryOptions ...Option) *cobra.Command {
 	// explicitly register (if not already registered) the kube effective version and feature gate in DefaultComponentGlobalsRegistry,
 	// which will be used in NewOptions.
 	_, _ = featuregate.DefaultComponentGlobalsRegistry.ComponentGlobalsOrRegister(
@@ -99,7 +98,7 @@ for more information about scheduling and the kube-scheduler component.`,
 			return opts.ComponentGlobalsRegistry.Set()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCommand(cmd, opts, registryOptions...)
+			return runCommand(cmd, opts, stopCh, registryOptions...)
 		},
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {
@@ -130,7 +129,7 @@ for more information about scheduling and the kube-scheduler component.`,
 }
 
 // runCommand runs the scheduler.
-func runCommand(cmd *cobra.Command, opts *options.Options, registryOptions ...Option) error {
+func runCommand(cmd *cobra.Command, opts *options.Options, stopCh <-chan struct{}, registryOptions ...Option) error {
 	verflag.PrintAndExitIfRequested()
 	fg := opts.ComponentGlobalsRegistry.FeatureGateFor(featuregate.DefaultKubeComponent)
 	// Activate logging as soon as possible, after that
@@ -144,7 +143,6 @@ func runCommand(cmd *cobra.Command, opts *options.Options, registryOptions ...Op
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		stopCh := server.SetupSignalHandler()
 		<-stopCh
 		cancel()
 	}()
