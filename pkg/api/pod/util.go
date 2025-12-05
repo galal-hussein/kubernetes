@@ -442,6 +442,7 @@ func GetValidationOptionsFromPodSpecAndMeta(podSpec, oldPodSpec *api.PodSpec, po
 
 	opts.AllowOnlyRecursiveSELinuxChangePolicy = useOnlyRecursiveSELinuxChangePolicy(oldPodSpec)
 	opts.AllowTaintTolerationComparisonOperators = allowTaintTolerationComparisonOperators(oldPodSpec)
+	opts.AllowAffinityTolerationSemverComparisonOperators = allowAffinityTolerationSemverComparisonOperators(oldPodSpec)
 
 	if oldPodSpec != nil {
 		// if old spec used non-integer multiple of huge page unit size, we must allow it
@@ -1655,6 +1656,16 @@ func allowTaintTolerationComparisonOperators(oldPodSpec *api.PodSpec) bool {
 	// allow the operators if the feature gate is enabled or the old pod spec uses
 	// comparison operators
 	if utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators) ||
+		taintTolerationComparisonOperatorsInUse(oldPodSpec) {
+		return true
+	}
+	return false
+}
+
+func allowAffinityTolerationSemverComparisonOperators(oldPodSpec *api.PodSpec) bool {
+	// allow the operators if the feature gate is enabled or the old pod spec uses
+	// comparison operators
+	if utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) ||
 		taintTolerationComparisonOperatorsInUse(oldPodSpec) {
 		return true
 	}

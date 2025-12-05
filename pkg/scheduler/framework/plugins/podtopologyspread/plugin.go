@@ -58,18 +58,19 @@ var systemDefaultConstraints = []v1.TopologySpreadConstraint{
 
 // PodTopologySpread is a plugin that ensures pod's topologySpreadConstraints is satisfied.
 type PodTopologySpread struct {
-	systemDefaulted                              bool
-	parallelizer                                 fwk.Parallelizer
-	defaultConstraints                           []v1.TopologySpreadConstraint
-	sharedLister                                 fwk.SharedLister
-	services                                     corelisters.ServiceLister
-	replicationCtrls                             corelisters.ReplicationControllerLister
-	replicaSets                                  appslisters.ReplicaSetLister
-	statefulSets                                 appslisters.StatefulSetLister
-	enableNodeInclusionPolicyInPodTopologySpread bool
-	enableMatchLabelKeysInPodTopologySpread      bool
-	enableSchedulingQueueHint                    bool
-	enableTaintTolerationComparisonOperators     bool
+	systemDefaulted                                   bool
+	parallelizer                                      fwk.Parallelizer
+	defaultConstraints                                []v1.TopologySpreadConstraint
+	sharedLister                                      fwk.SharedLister
+	services                                          corelisters.ServiceLister
+	replicationCtrls                                  corelisters.ReplicationControllerLister
+	replicaSets                                       appslisters.ReplicaSetLister
+	statefulSets                                      appslisters.StatefulSetLister
+	enableNodeInclusionPolicyInPodTopologySpread      bool
+	enableMatchLabelKeysInPodTopologySpread           bool
+	enableSchedulingQueueHint                         bool
+	enableTaintTolerationComparisonOperators          bool
+	enableAffinityTolerationSemverComparisonOperators bool
 }
 
 var _ fwk.PreFilterPlugin = &PodTopologySpread{}

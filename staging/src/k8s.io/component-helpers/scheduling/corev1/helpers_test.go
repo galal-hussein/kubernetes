@@ -647,13 +647,14 @@ func TestGetAvoidPodsFromNode(t *testing.T) {
 func TestFindMatchingUntoleratedTaint(t *testing.T) {
 	logger, _ := ktesting.NewTestContext(t)
 	testCases := []struct {
-		description                 string
-		tolerations                 []v1.Toleration
-		taints                      []v1.Taint
-		applyFilter                 taintsFilterFunc
-		expectTolerated             bool
-		expectError                 bool
-		enableComparisonOperatorsFG bool
+		description                       string
+		tolerations                       []v1.Toleration
+		taints                            []v1.Taint
+		applyFilter                       taintsFilterFunc
+		expectTolerated                   bool
+		expectError                       bool
+		enableComparisonOperatorsFG       bool
+		enableSemverComparisonOperatorsFG bool
 	}{
 		{
 			description:     "empty tolerations tolerate empty taints",
@@ -839,7 +840,7 @@ func TestFindMatchingUntoleratedTaint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		_, untolerated := FindMatchingUntoleratedTaint(logger, tc.taints, tc.tolerations, tc.applyFilter, tc.enableComparisonOperatorsFG)
+		_, untolerated := FindMatchingUntoleratedTaint(logger, tc.taints, tc.tolerations, tc.applyFilter, tc.enableComparisonOperatorsFG, tc.enableSemverComparisonOperatorsFG)
 		if tc.expectTolerated != !untolerated {
 			filteredTaints := []v1.Taint{}
 			for _, taint := range tc.taints {

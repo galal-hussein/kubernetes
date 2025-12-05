@@ -3365,6 +3365,9 @@ const (
 	NodeSelectorOpDoesNotExist NodeSelectorOperator = "DoesNotExist"
 	NodeSelectorOpGt           NodeSelectorOperator = "Gt"
 	NodeSelectorOpLt           NodeSelectorOperator = "Lt"
+	NodeSelectorOpSemverGt     NodeSelectorOperator = "SemverGt"
+	NodeSelectorOpSemverLt     NodeSelectorOperator = "SemverLt"
+	NodeSelectorOpSemverEq     NodeSelectorOperator = "SemverEq"
 )
 
 // TopologySelectorTerm represents the result of label queries.
@@ -3656,10 +3659,13 @@ type TolerationOperator string
 
 // These are valid values for TolerationOperator
 const (
-	TolerationOpExists TolerationOperator = "Exists"
-	TolerationOpEqual  TolerationOperator = "Equal"
-	TolerationOpLt     TolerationOperator = "Lt"
-	TolerationOpGt     TolerationOperator = "Gt"
+	TolerationOpExists   TolerationOperator = "Exists"
+	TolerationOpEqual    TolerationOperator = "Equal"
+	TolerationOpLt       TolerationOperator = "Lt"
+	TolerationOpGt       TolerationOperator = "Gt"
+	TolerationOpSemverLt TolerationOperator = "SemverLt"
+	TolerationOpSemverGt TolerationOperator = "SemverGt"
+	TolerationOpSemverEq TolerationOperator = "SemverEq"
 )
 
 // PodReadinessGate contains the reference to a pod condition

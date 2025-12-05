@@ -39,6 +39,13 @@ import (
 // of code conflicts because changes are more likely to be scattered
 // across the file.
 const (
+
+	// owner: @galal-hussein
+	//
+	// AffinityTaintTolerationSemverComparisonOperators enables semver comparison
+	// operators (SemverLt, SemverGt, SemverEq) for tolerations and node affinity
+	AffinityTaintTolerationSemverComparisonOperators featuregate.Feature = "AffinityTaintTolerationSemverComparisonOperators"
+
 	// owner: @aojea
 	//
 	// Allow kubelet to request a certificate without any Node IP available, only
@@ -1121,6 +1128,10 @@ const (
 //
 // Entries are alphabetized.
 var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate.VersionedSpecs{
+	AffinityTaintTolerationSemverComparisonOperators: {
+		{Version: version.MustParse("1.36"), Default: false, PreRelease: featuregate.Alpha},
+	},
+
 	AllowDNSOnlyNodeCSR: {
 		{Version: version.MustParse("1.0"), Default: true, PreRelease: featuregate.GA},
 		{Version: version.MustParse("1.31"), Default: false, PreRelease: featuregate.Deprecated},
@@ -2165,6 +2176,8 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 //
 // Entries are alphabetized.
 var defaultKubernetesFeatureGateDependencies = map[featuregate.Feature][]featuregate.Feature{
+	AffinityTaintTolerationSemverComparisonOperators: {},
+
 	AllowDNSOnlyNodeCSR: {},
 
 	AllowInsecureKubeletCertificateSigningRequests: {},

@@ -3776,7 +3776,7 @@ type NodeSelectorRequirement struct {
 
 // A node selector operator is the set of operators that can be used in
 // a node selector requirement.
-// +enum
+// +enums
 type NodeSelectorOperator string
 
 const (
@@ -3786,6 +3786,9 @@ const (
 	NodeSelectorOpDoesNotExist NodeSelectorOperator = "DoesNotExist"
 	NodeSelectorOpGt           NodeSelectorOperator = "Gt"
 	NodeSelectorOpLt           NodeSelectorOperator = "Lt"
+	NodeSelectorOpSemverGt     NodeSelectorOperator = "SemverGt"
+	NodeSelectorOpSemverLt     NodeSelectorOperator = "SemverLt"
+	NodeSelectorOpSemverEq     NodeSelectorOperator = "SemverEq"
 )
 
 // A topology selector term represents the result of label queries.
@@ -4088,6 +4091,10 @@ const (
 	TolerationOpEqual  TolerationOperator = "Equal"
 	TolerationOpLt     TolerationOperator = "Lt"
 	TolerationOpGt     TolerationOperator = "Gt"
+
+	TolerationOpSemverLt TolerationOperator = "SemverLt"
+	TolerationOpSemverGt TolerationOperator = "SemverGt"
+	TolerationOpSemverEq TolerationOperator = "SemverEq"
 )
 
 // PodReadinessGate contains the reference to a pod condition

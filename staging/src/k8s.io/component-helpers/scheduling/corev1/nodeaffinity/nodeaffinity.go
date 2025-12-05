@@ -233,6 +233,12 @@ func nodeSelectorRequirementsAsSelector(nsm []v1.NodeSelectorRequirement, path *
 			op = selection.GreaterThan
 		case v1.NodeSelectorOpLt:
 			op = selection.LessThan
+		case v1.NodeSelectorOpSemverEq:
+			op = selection.VersionEquals
+		case v1.NodeSelectorOpSemverLt:
+			op = selection.VersionLessThan
+		case v1.NodeSelectorOpSemverGt:
+			op = selection.VersionGreaterThan
 		default:
 			errs = append(errs, field.NotSupported(p.Child("operator"), expr.Operator, validSelectorOperators))
 			continue

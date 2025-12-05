@@ -17,19 +17,21 @@ limitations under the License.
 package v1
 
 import (
-	"k8s.io/klog/v2/ktesting"
 	"testing"
+
+	"k8s.io/klog/v2/ktesting"
 )
 
 func TestTolerationToleratesTaint(t *testing.T) {
 	logger, _ := ktesting.NewTestContext(t)
 	testCases := []struct {
-		description                                string
-		toleration                                 Toleration
-		taint                                      Taint
-		expectTolerated                            bool
-		expectError                                bool
-		enableTaintTolerationComparisonOperatorsFG bool
+		description                                         string
+		toleration                                          Toleration
+		taint                                               Taint
+		expectTolerated                                     bool
+		expectError                                         bool
+		enableTaintTolerationComparisonOperatorsFG          bool
+		enableAffinityTolerationSemverComparisonOperatorsFG bool
 	}{
 		{
 			description: "toleration and taint have the same key and effect, and operator is Exists, and taint has no value, expect tolerated",
@@ -248,7 +250,7 @@ func TestTolerationToleratesTaint(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		if tolerated := tc.toleration.ToleratesTaint(logger, &tc.taint, tc.enableTaintTolerationComparisonOperatorsFG); tc.expectTolerated != tolerated {
+		if tolerated := tc.toleration.ToleratesTaint(logger, &tc.taint, tc.enableTaintTolerationComparisonOperatorsFG, tc.enableTaintTolerationComparisonOperatorsFG); tc.expectTolerated != tolerated {
 			t.Errorf("[%s] expect %v, got %v: toleration %+v, taint %s", tc.description, tc.expectTolerated, tolerated, tc.toleration, tc.taint.ToString())
 		}
 	}

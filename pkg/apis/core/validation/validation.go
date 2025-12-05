@@ -33,6 +33,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/blang/semver/v4"
 	netutils "k8s.io/utils/net"
 
 	v1 "k8s.io/api/core/v1"
@@ -4405,6 +4406,16 @@ func ValidateTolerations(tolerations []core.Toleration, fldPath *field.Path, opt
 			if _, err := strconv.ParseInt(toleration.Value, 10, 64); err != nil {
 				allErrors = append(allErrors, field.Invalid(idxPath.Child("value"), toleration.Value, err.Error()))
 			}
+		case core.TolerationOpSemverEq, core.TolerationOpSemverGt, core.TolerationOpSemverLt:
+			if !opts.AllowAffinityTolerationSemverComparisonOperators {
+				validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
+				allErrors = append(allErrors, field.NotSupported(idxPath.Child("operator"), toleration.Operator, validValues))
+				break
+			}
+			// non-strictly validate semver version by using semver.ParseTolerant
+			if _, err := semver.ParseTolerant(toleration.Value); err != nil {
+				allErrors = append(allErrors, field.Invalid(idxPath.Child("value"), toleration.Value, err.Error()))
+			}
 		default:
 			validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists}
 			allErrors = append(allErrors, field.NotSupported(idxPath.Child("operator"), toleration.Operator, validValues))
@@ -4487,7 +4498,9 @@ type PodValidationOptions struct {
 	AllowContainerRestartPolicyRules bool
 	// Allow user namespaces with volume devices, even though they will not function properly (should only be tolerated in updates of objects which already have this invalid configuration).
 	AllowUserNamespacesWithVolumeDevices bool
-	// Allow taint toleration comparison operators (Lt, Gt)
+	// Allow taint toleration comparison operators (SemverGt, SemverLt, SemverEq)
+	AllowAffinityTolerationSemverComparisonOperators bool
+	// Allow semver toleration and affinity comparison operators (Lt, Gt)
 	AllowTaintTolerationComparisonOperators bool
 	// Allow hostNetwork pods to use user namespaces
 	AllowUserNamespacesHostNetworkSupport bool
@@ -4953,7 +4966,7 @@ func validateWindows(spec *core.PodSpec, fldPath *field.Path) field.ErrorList {
 }
 
 // ValidateNodeSelectorRequirement tests that the specified NodeSelectorRequirement fields has valid data
-func ValidateNodeSelectorRequirement(rq core.NodeSelectorRequirement, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path) field.ErrorList {
+func ValidateNodeSelectorRequirement(rq core.NodeSelectorRequirement, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 	switch rq.Operator {
 	case core.NodeSelectorOpIn, core.NodeSelectorOpNotIn:
@@ -4969,6 +4982,22 @@ func ValidateNodeSelectorRequirement(rq core.NodeSelectorRequirement, allowInval
 		if len(rq.Values) != 1 {
 			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified single value when `operator` is 'Lt' or 'Gt'"))
 		}
+	case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
+		if !opts.AllowAffinityTolerationSemverComparisonOperators {
+			validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
+			allErrs = append(allErrs, field.NotSupported(fldPath.Child("operator"), rq.Operator, validValues))
+			break
+		}
+		if len(rq.Values) != 1 {
+			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified single value when `operator` is 'SemverLt' or 'SemverGt' or 'SemverEq'"))
+		}
+		// non-strictly validate semver version by using semver.ParseTolerant
+		for _, val := range rq.Values {
+			if _, err := semver.ParseTolerant(val); err != nil {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("values"), rq.Values, err.Error()))
+			}
+		}
+
 	default:
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), rq.Operator, "not a valid selector operator"))
 	}
@@ -4989,7 +5018,7 @@ var nodeFieldSelectorValidators = map[string]func(string, bool) []string{
 }
 
 // ValidateNodeFieldSelectorRequirement tests that the specified NodeSelectorRequirement fields has valid data
-func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldPath *field.Path) field.ErrorList {
+func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	switch req.Operator {
@@ -4997,6 +5026,19 @@ func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldP
 		if len(req.Values) != 1 {
 			allErrs = append(allErrs, field.Required(fldPath.Child("values"),
 				"must be only one value when `operator` is 'In' or 'NotIn' for node field selector"))
+		}
+	case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
+		if !opts.AllowAffinityTolerationSemverComparisonOperators {
+			validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
+			allErrs = append(allErrs, field.NotSupported(fldPath.Child("operator"), req.Operator, validValues))
+			break
+		}
+		if len(req.Values) != 1 {
+			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified single value when `operator` is 'SemverLt' or 'SemverGt' or 'SemverEq'"))
+		}
+		// non-strictly validate semver version by using semver.ParseTolerant
+		if _, err := semver.ParseTolerant(req.Values[0]); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("values"), req.Values, err.Error()))
 		}
 	default:
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), req.Operator, "not a valid selector operator"))
@@ -5016,22 +5058,22 @@ func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldP
 }
 
 // ValidateNodeSelectorTerm tests that the specified node selector term has valid data
-func ValidateNodeSelectorTerm(term core.NodeSelectorTerm, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path) field.ErrorList {
+func ValidateNodeSelectorTerm(term core.NodeSelectorTerm, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	for j, req := range term.MatchExpressions {
-		allErrs = append(allErrs, ValidateNodeSelectorRequirement(req, allowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("matchExpressions").Index(j))...)
+		allErrs = append(allErrs, ValidateNodeSelectorRequirement(req, allowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("matchExpressions").Index(j), opts)...)
 	}
 
 	for j, req := range term.MatchFields {
-		allErrs = append(allErrs, ValidateNodeFieldSelectorRequirement(req, fldPath.Child("matchFields").Index(j))...)
+		allErrs = append(allErrs, ValidateNodeFieldSelectorRequirement(req, fldPath.Child("matchFields").Index(j), opts)...)
 	}
 
 	return allErrs
 }
 
 // ValidateNodeSelector tests that the specified nodeSelector fields has valid data
-func ValidateNodeSelector(nodeSelector *core.NodeSelector, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path) field.ErrorList {
+func ValidateNodeSelector(nodeSelector *core.NodeSelector, allowInvalidLabelValueInRequiredNodeAffinity bool, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	termFldPath := fldPath.Child("nodeSelectorTerms")
@@ -5040,7 +5082,7 @@ func ValidateNodeSelector(nodeSelector *core.NodeSelector, allowInvalidLabelValu
 	}
 
 	for i, term := range nodeSelector.NodeSelectorTerms {
-		allErrs = append(allErrs, ValidateNodeSelectorTerm(term, allowInvalidLabelValueInRequiredNodeAffinity, termFldPath.Index(i))...)
+		allErrs = append(allErrs, ValidateNodeSelectorTerm(term, allowInvalidLabelValueInRequiredNodeAffinity, termFldPath.Index(i), opts)...)
 	}
 
 	return allErrs
@@ -5133,7 +5175,7 @@ func validatePreferAvoidPodsEntry(avoidPodEntry core.PreferAvoidPodsEntry, fldPa
 }
 
 // ValidatePreferredSchedulingTerms tests that the specified SoftNodeAffinity fields has valid data
-func ValidatePreferredSchedulingTerms(terms []core.PreferredSchedulingTerm, fldPath *field.Path) field.ErrorList {
+func ValidatePreferredSchedulingTerms(terms []core.PreferredSchedulingTerm, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	for i, term := range terms {
@@ -5143,7 +5185,7 @@ func ValidatePreferredSchedulingTerms(terms []core.PreferredSchedulingTerm, fldP
 
 		// we always allow invalid label-value for preferred affinity
 		// as they can success when cluster has only one node
-		allErrs = append(allErrs, ValidateNodeSelectorTerm(term.Preference, true, fldPath.Index(i).Child("preference"))...)
+		allErrs = append(allErrs, ValidateNodeSelectorTerm(term.Preference, true, fldPath.Index(i).Child("preference"), opts)...)
 	}
 	return allErrs
 }
@@ -5213,10 +5255,10 @@ func validateNodeAffinity(na *core.NodeAffinity, opts PodValidationOptions, fldP
 	//	allErrs = append(allErrs, ValidateNodeSelector(na.RequiredDuringSchedulingRequiredDuringExecution, fldPath.Child("requiredDuringSchedulingRequiredDuringExecution"))...)
 	// }
 	if na.RequiredDuringSchedulingIgnoredDuringExecution != nil {
-		allErrs = append(allErrs, ValidateNodeSelector(na.RequiredDuringSchedulingIgnoredDuringExecution, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("requiredDuringSchedulingIgnoredDuringExecution"))...)
+		allErrs = append(allErrs, ValidateNodeSelector(na.RequiredDuringSchedulingIgnoredDuringExecution, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("requiredDuringSchedulingIgnoredDuringExecution"), opts)...)
 	}
 	if len(na.PreferredDuringSchedulingIgnoredDuringExecution) > 0 {
-		allErrs = append(allErrs, ValidatePreferredSchedulingTerms(na.PreferredDuringSchedulingIgnoredDuringExecution, fldPath.Child("preferredDuringSchedulingIgnoredDuringExecution"))...)
+		allErrs = append(allErrs, ValidatePreferredSchedulingTerms(na.PreferredDuringSchedulingIgnoredDuringExecution, fldPath.Child("preferredDuringSchedulingIgnoredDuringExecution"), opts)...)
 	}
 	return allErrs
 }
@@ -8706,7 +8748,7 @@ func validateVolumeNodeAffinity(nodeAffinity *core.VolumeNodeAffinity, opts Pers
 	}
 
 	if nodeAffinity.Required != nil {
-		allErrs = append(allErrs, ValidateNodeSelector(nodeAffinity.Required, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("required"))...)
+		allErrs = append(allErrs, ValidateNodeSelector(nodeAffinity.Required, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("required"), PodValidationOptions{})...)
 	} else {
 		allErrs = append(allErrs, field.Required(fldPath.Child("required"), "must specify required node constraints"))
 	}

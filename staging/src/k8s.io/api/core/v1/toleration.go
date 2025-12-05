@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/apimachinery/pkg/api/validate/content"
 
 	"k8s.io/klog/v2"
@@ -49,7 +50,9 @@ func (t *Toleration) MatchToleration(tolerationToMatch *Toleration) bool {
 //     between toleration.value and taint.value.
 //  5. If enableComparisonOperators is false and the toleration uses 'Lt' or 'Gt'
 //     operators, the toleration does not match (returns false).
-func (t *Toleration) ToleratesTaint(logger klog.Logger, taint *Taint, enableComparisonOperators bool) bool {
+//  6. If enableSemverComparisonOperators is false and the toleration uses 'SemverLt' or 'SemverGt' or 'SemverEq'
+//     operators, the toleration does not match (returns false).
+func (t *Toleration) ToleratesTaint(logger klog.Logger, taint *Taint, enableComparisonOperators, enableSemverComparisonOperators bool) bool {
 	if len(t.Effect) > 0 && t.Effect != taint.Effect {
 		return false
 	}
@@ -71,6 +74,12 @@ func (t *Toleration) ToleratesTaint(logger klog.Logger, taint *Taint, enableComp
 			return false
 		}
 		return compareNumericValues(logger, t.Value, taint.Value, t.Operator)
+	case TolerationOpSemverLt, TolerationOpSemverGt, TolerationOpSemverEq:
+		// If Semver comparison operators are disabled, this toleration doesn't match
+		if !enableSemverComparisonOperators {
+			return false
+		}
+		return compareSemVerValues(logger, t.Value, taint.Value, t.Operator)
 	default:
 		return false
 	}
@@ -106,6 +115,32 @@ func compareNumericValues(logger klog.Logger, tolerationVal, taintVal string, op
 		return tntVal < tVal
 	case TolerationOpGt:
 		return tntVal > tVal
+	default:
+		return false
+	}
+}
+
+// compareSemVerValues performs Semver comparison between toleration and taint values
+func compareSemVerValues(logger klog.Logger, tolerationVal, taintVal string, op TolerationOperator) bool {
+
+	tolerationVersion, err := semver.ParseTolerant(tolerationVal)
+	if err != nil {
+		logger.Error(err, "failed to parse tolartion value as semantic version", "toleration", tolerationVal)
+		return false
+	}
+
+	taintVersion, err := semver.ParseTolerant(taintVal)
+	if err != nil {
+		logger.Error(err, "failed to parse taint value as semantic version", "taint", taintVal)
+	}
+
+	switch op {
+	case TolerationOpSemverEq:
+		return taintVersion.EQ(tolerationVersion)
+	case TolerationOpSemverGt:
+		return taintVersion.GT(tolerationVersion)
+	case TolerationOpSemverLt:
+		return taintVersion.LT(tolerationVersion)
 	default:
 		return false
 	}

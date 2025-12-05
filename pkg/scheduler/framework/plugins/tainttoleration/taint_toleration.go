@@ -33,9 +33,10 @@ import (
 
 // TaintToleration is a plugin that checks if a pod tolerates a node's taints.
 type TaintToleration struct {
-	handle                                   fwk.Handle
-	enableSchedulingQueueHint                bool
-	enableTaintTolerationComparisonOperators bool
+	handle                                            fwk.Handle
+	enableSchedulingQueueHint                         bool
+	enableTaintTolerationComparisonOperators          bool
+	enableAffinityTolerationSemverComparisonOperators bool
 }
 
 var _ fwk.FilterPlugin = &TaintToleration{}
@@ -101,10 +102,10 @@ func (pl *TaintToleration) isSchedulableAfterNodeChange(logger klog.Logger, pod 
 
 	wasUntolerated := true
 	if originalNode != nil {
-		_, wasUntolerated = v1helper.FindMatchingUntoleratedTaint(logger, originalNode.Spec.Taints, pod.Spec.Tolerations, helper.DoNotScheduleTaintsFilterFunc(), pl.enableTaintTolerationComparisonOperators)
+		_, wasUntolerated = v1helper.FindMatchingUntoleratedTaint(logger, originalNode.Spec.Taints, pod.Spec.Tolerations, helper.DoNotScheduleTaintsFilterFunc(), pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationComparisonOperators)
 	}
 
-	_, isUntolerated := v1helper.FindMatchingUntoleratedTaint(logger, modifiedNode.Spec.Taints, pod.Spec.Tolerations, helper.DoNotScheduleTaintsFilterFunc(), pl.enableTaintTolerationComparisonOperators)
+	_, isUntolerated := v1helper.FindMatchingUntoleratedTaint(logger, modifiedNode.Spec.Taints, pod.Spec.Tolerations, helper.DoNotScheduleTaintsFilterFunc(), pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationComparisonOperators)
 
 	if wasUntolerated && !isUntolerated {
 		logger.V(5).Info("node was created or updated, and this may make the Pod rejected by TaintToleration plugin in the previous scheduling cycle schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
@@ -122,7 +123,7 @@ func (pl *TaintToleration) Filter(ctx context.Context, state fwk.CycleState, pod
 
 	taint, isUntolerated := v1helper.FindMatchingUntoleratedTaint(logger, node.Spec.Taints, pod.Spec.Tolerations,
 		helper.DoNotScheduleTaintsFilterFunc(),
-		pl.enableTaintTolerationComparisonOperators)
+		pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators)
 	if !isUntolerated {
 		return nil
 	}
@@ -184,7 +185,7 @@ func (pl *TaintToleration) countIntolerableTaintsPreferNoSchedule(logger klog.Lo
 			continue
 		}
 
-		if !v1helper.TolerationsTolerateTaint(logger, tolerations, &taint, pl.enableTaintTolerationComparisonOperators) {
+		if !v1helper.TolerationsTolerateTaint(logger, tolerations, &taint, pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
 			intolerableTaints++
 		}
 	}
@@ -222,6 +223,7 @@ func New(_ context.Context, _ runtime.Object, h fwk.Handle, fts feature.Features
 		handle:                                   h,
 		enableSchedulingQueueHint:                fts.EnableSchedulingQueueHint,
 		enableTaintTolerationComparisonOperators: fts.EnableTaintTolerationComparisonOperators,
+		enableAffinityTolerationSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
 	}, nil
 }
 

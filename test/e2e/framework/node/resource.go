@@ -20,10 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/klog/v2"
 	"net"
 	"strings"
 	"time"
+
+	"k8s.io/klog/v2"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -429,8 +430,8 @@ func toleratesTaintsWithNoScheduleNoExecuteEffects(logger klog.Logger, taints []
 
 	toleratesTaint := func(taint v1.Taint) bool {
 		for _, toleration := range tolerations {
-			//	TaintTolerationComparisonOperators feature gate will be false for e2e since the feature is in Alpha.
-			if toleration.ToleratesTaint(logger, &taint, false) {
+			//	TaintTolerationComparisonOperators, and AffinityTolerationSemverComparisonOperators feature gates will be false for e2e since the feature is in Alpha.
+			if toleration.ToleratesTaint(logger, &taint, false, false) {
 				return true
 			}
 		}

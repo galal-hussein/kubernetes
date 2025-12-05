@@ -23,7 +23,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver/v4"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/features"
 
 	"k8s.io/apimachinery/pkg/api/validate/content"
 	"k8s.io/apimachinery/pkg/selection"
@@ -212,6 +215,19 @@ func NewRequirement(key string, op selection.Operator, vals []string, opts ...fi
 				allErrs = append(allErrs, field.Invalid(valuePath.Index(i), vals[i], "for 'Gt', 'Lt' operators, the value must be an integer"))
 			}
 		}
+	case selection.VersionEquals, selection.VersionGreaterThan, selection.VersionLessThan:
+		if !utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) {
+			allErrs = append(allErrs, field.NotSupported(path.Child("operator"), op, validRequirementOperators))
+			break
+		}
+		if len(vals) != 1 {
+			allErrs = append(allErrs, field.Invalid(valuePath, vals, "for 'SemverLt', 'SemverGt', 'SemverEq' operators, exactly one value is required"))
+		}
+		for i := range vals {
+			if _, err := semver.ParseTolerant(vals[i]); err != nil {
+				allErrs = append(allErrs, field.Invalid(valuePath.Index(i), vals[i], "for 'SemverLt', 'SemverGt', 'SemverEq' operators, the value must be a semantic version"))
+			}
+		}
 	default:
 		allErrs = append(allErrs, field.NotSupported(path.Child("operator"), op, validRequirementOperators))
 	}
@@ -244,6 +260,8 @@ func (r *Requirement) hasValue(value string) bool {
 //     Requirement's key.
 //  5. The operator is GreaterThanOperator or LessThanOperator, and Labels has
 //     the Requirement's key and the corresponding value satisfies mathematical inequality.
+//  6. The operator is VersionGreaterThanOperator or VersionLessThanOperator or VersionEqualThanOperator, and Labels has
+//     the Requirement's key and the corresponding value satisfies semver comparison.
 func (r *Requirement) Matches(ls Labels) bool {
 	switch r.operator {
 	case selection.In, selection.Equals, selection.DoubleEquals:
@@ -288,6 +306,38 @@ func (r *Requirement) Matches(ls Labels) bool {
 			}
 		}
 		return (r.operator == selection.GreaterThan && lsValue > rValue) || (r.operator == selection.LessThan && lsValue < rValue)
+	case selection.VersionEquals, selection.VersionGreaterThan, selection.VersionLessThan:
+		if !utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) {
+			return false
+		}
+
+		val, exists := ls.Lookup(r.key)
+		if !exists {
+			return false
+		}
+
+		lsVersion, err := semver.ParseTolerant(val)
+		if err != nil {
+			klog.V(10).Infof("Parse semver failed for value %+v in label %+v, %+v", val, ls, err)
+			return false
+		}
+
+		// There should be only one strValue in r.strValues, and can be converted to a semver.
+		if len(r.strValues) != 1 {
+			klog.V(10).Infof("Invalid values count %+v of requirement %#v, for 'SemverGt', 'SemverLt', `SemverEq` operators, exactly one value is required", len(r.strValues), r)
+			return false
+		}
+
+		var rVersion semver.Version
+		for i := range r.strValues {
+			rVersion, err = semver.ParseTolerant(r.strValues[i])
+			if err != nil {
+				klog.V(10).Infof("Parse semver failed for value %+v in requirement %#v, for 'SemverGt', 'SemverLt', `SemverEq` operators, the value must be a semver", r.strValues[i], r)
+				return false
+			}
+		}
+
+		return (r.operator == selection.VersionGreaterThan && lsVersion.GT(rVersion)) || (r.operator == selection.VersionLessThan && lsVersion.LT(rVersion)) || (r.operator == selection.VersionEquals && lsVersion.EQ(rVersion))
 	default:
 		return false
 	}

@@ -19,9 +19,10 @@ package podtopologyspread
 import (
 	"context"
 	"fmt"
-	"k8s.io/klog/v2"
 	"math"
 	"sync/atomic"
+
+	"k8s.io/klog/v2"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -171,7 +172,7 @@ func (pl *PodTopologySpread) PreScore(
 		for i, c := range state.Constraints {
 			if pl.enableNodeInclusionPolicyInPodTopologySpread &&
 				!c.matchNodeInclusionPolicies(logger, pod, node, requiredNodeAffinity,
-					pl.enableTaintTolerationComparisonOperators) {
+					pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
 				continue
 			}
 

@@ -136,7 +136,7 @@ func ParseToLabelSelector(selector string) (*LabelSelector, error) {
 			op = LabelSelectorOpExists
 		case selection.DoesNotExist:
 			op = LabelSelectorOpDoesNotExist
-		case selection.GreaterThan, selection.LessThan:
+		case selection.GreaterThan, selection.LessThan, selection.VersionEquals, selection.VersionGreaterThan, selection.VersionLessThan:
 			// Adding a separate case for these operators to indicate that this is deliberate
 			return nil, fmt.Errorf("%q isn't supported in label selectors", req.Operator())
 		default:

@@ -742,7 +742,7 @@ func preCheckForNode(logger klog.Logger, nodeInfo *framework.NodeInfo) queue.Pre
 		}
 		_, isUntolerated := corev1helpers.FindMatchingUntoleratedTaint(logger, nodeInfo.Node().Spec.Taints, pod.Spec.Tolerations,
 			helper.DoNotScheduleTaintsFilterFunc(),
-			utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators))
+			utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators))
 		return !isUntolerated
 	}
 }
