@@ -1662,11 +1662,38 @@ func allowTaintTolerationComparisonOperators(oldPodSpec *api.PodSpec) bool {
 	return false
 }
 
+func affinityTolerationSemverComparisonOperatorsInUse(podSpec *api.PodSpec) bool {
+	if podSpec == nil {
+		return false
+	}
+	for _, toleration := range podSpec.Tolerations {
+		if toleration.Operator == api.TolerationOpSemverEq || toleration.Operator == api.TolerationOpSemverGt || toleration.Operator == api.TolerationOpSemverLt {
+			return true
+		}
+	}
+	// check if the semver operators are in use by node affinity
+	for _, preferredAffinityTerm := range podSpec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		for _, nodeSelectorReq := range preferredAffinityTerm.Preference.MatchExpressions {
+			if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
+				return true
+			}
+		}
+	}
+	for _, reqAffinityTerm := range podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
+		for _, nodeSelectorReq := range reqAffinityTerm.MatchExpressions {
+			if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func allowAffinityTolerationSemverComparisonOperators(oldPodSpec *api.PodSpec) bool {
 	// allow the operators if the feature gate is enabled or the old pod spec uses
 	// comparison operators
 	if utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) ||
-		taintTolerationComparisonOperatorsInUse(oldPodSpec) {
+		affinityTolerationSemverComparisonOperatorsInUse(oldPodSpec) {
 		return true
 	}
 	return false
