@@ -200,6 +200,7 @@ var availableAllocators = []struct {
 		nodeNameToMatch string,
 		allNodesMatch bool,
 		nodeSelector *v1.NodeSelector,
+		enableSemverComparisonOperators bool,
 	) (bool, error)
 }{
 	// Most stable first.
@@ -253,7 +254,7 @@ var availableAllocators = []struct {
 func NodeMatches(features Features, node *v1.Node, nodeNameToMatch string, allNodesMatch bool, nodeSelector *v1.NodeSelector) (bool, error) {
 	for _, allocator := range availableAllocators {
 		if allocator.supportedFeatures.Set().IsSuperset(features.Set()) {
-			return allocator.nodeMatches(node, nodeNameToMatch, allNodesMatch, nodeSelector)
+			return allocator.nodeMatches(node, nodeNameToMatch, allNodesMatch, nodeSelector, features.SemverComparisonOperators)
 		}
 	}
 

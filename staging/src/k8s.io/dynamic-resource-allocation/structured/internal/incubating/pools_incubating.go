@@ -28,14 +28,14 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func NodeMatches(node *v1.Node, nodeNameToMatch string, allNodesMatch bool, nodeSelector *v1.NodeSelector) (bool, error) {
+func NodeMatches(node *v1.Node, nodeNameToMatch string, allNodesMatch bool, nodeSelector *v1.NodeSelector, enableSemverComparisonOperators bool) (bool, error) {
 	switch {
 	case nodeNameToMatch != "":
 		return node != nil && node.Name == nodeNameToMatch, nil
 	case allNodesMatch:
 		return true, nil
 	case nodeSelector != nil:
-		selector, err := nodeaffinity.NewNodeSelector(nodeSelector)
+		selector, err := nodeaffinity.NewNodeSelector(nodeSelector, enableSemverComparisonOperators)
 		if err != nil {
 			return false, fmt.Errorf("failed to parse node selector %s: %w", nodeSelector.String(), err)
 		}
@@ -66,7 +66,7 @@ func GatherPools(ctx context.Context, slices []*resourceapi.ResourceSlice, node 
 				return nil, fmt.Errorf("failed to add node slice %s: %w", slice.Name, err)
 			}
 		} else if nodeName, allNodes := ptr.Deref(slice.Spec.NodeName, ""), ptr.Deref(slice.Spec.AllNodes, false); nodeName != "" || allNodes || slice.Spec.NodeSelector != nil {
-			match, err := NodeMatches(node, nodeName, allNodes, slice.Spec.NodeSelector)
+			match, err := NodeMatches(node, nodeName, allNodes, slice.Spec.NodeSelector, features.SemverComparisonOperators)
 			if err != nil {
 				return nil, fmt.Errorf("failed to perform node selection for slice %s: %w", slice.Name, err)
 			}
@@ -77,7 +77,7 @@ func GatherPools(ctx context.Context, slices []*resourceapi.ResourceSlice, node 
 			}
 		} else if ptr.Deref(slice.Spec.PerDeviceNodeSelection, false) {
 			for _, device := range slice.Spec.Devices {
-				match, err := NodeMatches(node, ptr.Deref(device.NodeName, ""), ptr.Deref(device.AllNodes, false), device.NodeSelector)
+				match, err := NodeMatches(node, ptr.Deref(device.NodeName, ""), ptr.Deref(device.AllNodes, false), device.NodeSelector, features.SemverComparisonOperators)
 				if err != nil {
 					return nil, fmt.Errorf("failed to perform node selection for device %s in slice %s: %w",
 						device.String(), slice.Name, err)

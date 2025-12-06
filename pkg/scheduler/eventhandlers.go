@@ -766,7 +766,7 @@ func AdmissionCheck(pod *v1.Pod, nodeInfo *framework.NodeInfo, includeAllFailure
 		}
 	}
 
-	if matches, _ := corev1nodeaffinity.GetRequiredNodeAffinity(pod).Match(nodeInfo.Node()); !matches {
+	if matches, _ := corev1nodeaffinity.GetRequiredNodeAffinity(pod, utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators)).Match(nodeInfo.Node()); !matches {
 		admissionResults = append(admissionResults, AdmissionResult{Name: nodeaffinity.Name, Reason: nodeaffinity.ErrReasonPod})
 		if !includeAllFailures {
 			return admissionResults

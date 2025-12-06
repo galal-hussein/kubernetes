@@ -37,10 +37,11 @@ import (
 
 // NodeAffinity is a plugin that checks if a pod node selector matches the node label.
 type NodeAffinity struct {
-	handle                    fwk.Handle
-	addedNodeSelector         *nodeaffinity.NodeSelector
-	addedPrefSchedTerms       *nodeaffinity.PreferredSchedulingTerms
-	enableSchedulingQueueHint bool
+	handle                          fwk.Handle
+	addedNodeSelector               *nodeaffinity.NodeSelector
+	addedPrefSchedTerms             *nodeaffinity.PreferredSchedulingTerms
+	enableSchedulingQueueHint       bool
+	enableSemverComparisonOperators bool
 }
 
 var _ fwk.PreFilterPlugin = &NodeAffinity{}
@@ -127,7 +128,7 @@ func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1
 		return fwk.QueueSkip, nil
 	}
 
-	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod)
+	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableSemverComparisonOperators)
 	isMatched, err := requiredNodeAffinity.Match(modifiedNode)
 	if err != nil {
 		return fwk.Queue, err
@@ -166,7 +167,7 @@ func (pl *NodeAffinity) PreFilter(ctx context.Context, cycleState fwk.CycleState
 		return nil, fwk.NewStatus(fwk.Skip)
 	}
 
-	state := &preFilterState{requiredNodeSelectorAndAffinity: nodeaffinity.GetRequiredNodeAffinity(pod)}
+	state := &preFilterState{requiredNodeSelectorAndAffinity: nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableSemverComparisonOperators)}
 	cycleState.Write(preFilterStateKey, state)
 
 	if noNodeAffinity || len(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
@@ -226,7 +227,7 @@ func (pl *NodeAffinity) Filter(ctx context.Context, state fwk.CycleState, pod *v
 	if err != nil {
 		// Fallback to calculate requiredNodeSelector and requiredNodeAffinity
 		// here when PreFilter is disabled.
-		s = &preFilterState{requiredNodeSelectorAndAffinity: nodeaffinity.GetRequiredNodeAffinity(pod)}
+		s = &preFilterState{requiredNodeSelectorAndAffinity: nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableSemverComparisonOperators)}
 	}
 
 	// Ignore parsing errors for backwards compatibility.
@@ -251,7 +252,7 @@ func (s *preScoreState) Clone() fwk.StateData {
 
 // PreScore builds and writes cycle state used by Score and NormalizeScore.
 func (pl *NodeAffinity) PreScore(ctx context.Context, cycleState fwk.CycleState, pod *v1.Pod, nodes []fwk.NodeInfo) *fwk.Status {
-	preferredNodeAffinity, err := getPodPreferredNodeAffinity(pod)
+	preferredNodeAffinity, err := getPodPreferredNodeAffinity(pod, pl.enableSemverComparisonOperators)
 	if err != nil {
 		return fwk.AsStatus(err)
 	}
@@ -280,7 +281,7 @@ func (pl *NodeAffinity) Score(ctx context.Context, state fwk.CycleState, pod *v1
 	s, err := getPreScoreState(state)
 	if err != nil {
 		// Fallback to calculate preferredNodeAffinity here when PreScore is disabled.
-		preferredNodeAffinity, err := getPodPreferredNodeAffinity(pod)
+		preferredNodeAffinity, err := getPodPreferredNodeAffinity(pod, pl.enableSemverComparisonOperators)
 		if err != nil {
 			return 0, fwk.AsStatus(err)
 		}
@@ -313,19 +314,20 @@ func New(_ context.Context, plArgs runtime.Object, h fwk.Handle, fts feature.Fea
 		return nil, err
 	}
 	pl := &NodeAffinity{
-		handle:                    h,
-		enableSchedulingQueueHint: fts.EnableSchedulingQueueHint,
+		handle:                          h,
+		enableSchedulingQueueHint:       fts.EnableSchedulingQueueHint,
+		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
 	}
 	if args.AddedAffinity != nil {
 		if ns := args.AddedAffinity.RequiredDuringSchedulingIgnoredDuringExecution; ns != nil {
-			pl.addedNodeSelector, err = nodeaffinity.NewNodeSelector(ns)
+			pl.addedNodeSelector, err = nodeaffinity.NewNodeSelector(ns, fts.EnableAffinityTolerationSemverComparisonOperators)
 			if err != nil {
 				return nil, fmt.Errorf("parsing addedAffinity.requiredDuringSchedulingIgnoredDuringExecution: %w", err)
 			}
 		}
 		// TODO: parse requiredDuringSchedulingRequiredDuringExecution when it gets added to the API.
 		if terms := args.AddedAffinity.PreferredDuringSchedulingIgnoredDuringExecution; len(terms) != 0 {
-			pl.addedPrefSchedTerms, err = nodeaffinity.NewPreferredSchedulingTerms(terms)
+			pl.addedPrefSchedTerms, err = nodeaffinity.NewPreferredSchedulingTerms(terms, fts.EnableAffinityTolerationSemverComparisonOperators)
 			if err != nil {
 				return nil, fmt.Errorf("parsing addedAffinity.preferredDuringSchedulingIgnoredDuringExecution: %w", err)
 			}
@@ -342,10 +344,10 @@ func getArgs(obj runtime.Object) (config.NodeAffinityArgs, error) {
 	return *ptr, validation.ValidateNodeAffinityArgs(nil, ptr)
 }
 
-func getPodPreferredNodeAffinity(pod *v1.Pod) (*nodeaffinity.PreferredSchedulingTerms, error) {
+func getPodPreferredNodeAffinity(pod *v1.Pod, enableSemverComparisonOperators bool) (*nodeaffinity.PreferredSchedulingTerms, error) {
 	affinity := pod.Spec.Affinity
 	if affinity != nil && affinity.NodeAffinity != nil && affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution != nil {
-		return nodeaffinity.NewPreferredSchedulingTerms(affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution)
+		return nodeaffinity.NewPreferredSchedulingTerms(affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, enableSemverComparisonOperators)
 	}
 	return nil, nil
 }

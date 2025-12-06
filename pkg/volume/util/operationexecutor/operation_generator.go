@@ -2166,7 +2166,7 @@ func checkNodeAffinity(og *operationGenerator, volumeToMount VolumeToMount) erro
 		if err != nil {
 			return err
 		}
-		err = storagehelpers.CheckNodeAffinity(pv, nodeLabels)
+		err = storagehelpers.CheckNodeAffinity(pv, nodeLabels, utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators))
 		if err != nil {
 			return err
 		}

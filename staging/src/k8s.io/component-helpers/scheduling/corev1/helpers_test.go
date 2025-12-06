@@ -262,7 +262,7 @@ func TestMatchNodeSelectorTerms(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := MatchNodeSelectorTerms(tt.args.node, tt.args.nodeSelector); got != tt.want {
+			if got, _ := MatchNodeSelectorTerms(tt.args.node, tt.args.nodeSelector, false); got != tt.want {
 				t.Errorf("MatchNodeSelectorTermsORed() = %v, want %v", got, tt.want)
 			}
 		})
@@ -539,7 +539,7 @@ func TestMatchNodeSelectorTermsStateless(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _ = MatchNodeSelectorTerms(tt.args.node, tt.args.nodeSelector)
+			_, _ = MatchNodeSelectorTerms(tt.args.node, tt.args.nodeSelector, false)
 			if !apiequality.Semantic.DeepEqual(tt.args.nodeSelector, tt.want) {
 				// fail when tt.args.nodeSelector is deeply modified
 				t.Errorf("MatchNodeSelectorTerms() got = %v, want %v", tt.args.nodeSelector, tt.want)

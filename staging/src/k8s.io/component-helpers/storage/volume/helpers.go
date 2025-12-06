@@ -65,7 +65,7 @@ func GetPersistentVolumeClass(volume *v1.PersistentVolume) string {
 
 // CheckNodeAffinity looks at the PV node affinity, and checks if the node has the same corresponding labels
 // This ensures that we don't mount a volume that doesn't belong to this node
-func CheckNodeAffinity(pv *v1.PersistentVolume, nodeLabels map[string]string) error {
+func CheckNodeAffinity(pv *v1.PersistentVolume, nodeLabels map[string]string, enableSemverComparisonOperator bool) error {
 	if pv.Spec.NodeAffinity == nil {
 		return nil
 	}
@@ -73,7 +73,7 @@ func CheckNodeAffinity(pv *v1.PersistentVolume, nodeLabels map[string]string) er
 	if pv.Spec.NodeAffinity.Required != nil {
 		node := &v1.Node{ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels}}
 		terms := pv.Spec.NodeAffinity.Required
-		if matches, err := corev1.MatchNodeSelectorTerms(node, terms); err != nil {
+		if matches, err := corev1.MatchNodeSelectorTerms(node, terms, enableSemverComparisonOperator); err != nil {
 			return err
 		} else if !matches {
 			return fmt.Errorf("no matching NodeSelectorTerms")

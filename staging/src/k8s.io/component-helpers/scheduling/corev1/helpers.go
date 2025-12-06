@@ -40,11 +40,12 @@ func PodPriority(pod *v1.Pod) int32 {
 func MatchNodeSelectorTerms(
 	node *v1.Node,
 	nodeSelector *v1.NodeSelector,
+	enableSemverComparisonOperators bool,
 ) (bool, error) {
 	if node == nil {
 		return false, nil
 	}
-	return nodeaffinity.NewLazyErrorNodeSelector(nodeSelector).Match(node)
+	return nodeaffinity.NewLazyErrorNodeSelector(nodeSelector, enableSemverComparisonOperators).Match(node)
 }
 
 // GetAvoidPodsFromNodeAnnotations scans the list of annotations and

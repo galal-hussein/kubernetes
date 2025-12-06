@@ -136,14 +136,15 @@ type nodeAllocation struct {
 
 // DynamicResources is a plugin that ensures that ResourceClaims are allocated.
 type DynamicResources struct {
-	enabled        bool
-	fts            feature.Features
-	filterTimeout  time.Duration
-	bindingTimeout time.Duration
-	fh             fwk.Handle
-	clientset      kubernetes.Interface
-	celCache       *cel.Cache
-	draManager     fwk.SharedDRAManager
+	enabled                         bool
+	fts                             feature.Features
+	filterTimeout                   time.Duration
+	bindingTimeout                  time.Duration
+	fh                              fwk.Handle
+	clientset                       kubernetes.Interface
+	celCache                        *cel.Cache
+	draManager                      fwk.SharedDRAManager
+	enableSemverComparisonOperators bool
 }
 
 // New initializes a new plugin and returns it.
@@ -174,8 +175,9 @@ func New(ctx context.Context, plArgs runtime.Object, fh fwk.Handle, fts feature.
 		// This is a LRU cache for compiled CEL expressions. The most
 		// recent 10 of them get reused across different scheduling
 		// cycles.
-		celCache:   cel.NewCache(10, cel.Features{EnableConsumableCapacity: fts.EnableDRAConsumableCapacity}),
-		draManager: fh.SharedDRAManager(),
+		celCache:                        cel.NewCache(10, cel.Features{EnableConsumableCapacity: fts.EnableDRAConsumableCapacity}),
+		draManager:                      fh.SharedDRAManager(),
+		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
 	}
 
 	return pl, nil
@@ -441,7 +443,7 @@ func (pl *DynamicResources) PreFilter(ctx context.Context, state fwk.CycleState,
 
 		if claim.Status.Allocation != nil {
 			if claim.Status.Allocation.NodeSelector != nil {
-				nodeSelector, err := nodeaffinity.NewNodeSelector(claim.Status.Allocation.NodeSelector)
+				nodeSelector, err := nodeaffinity.NewNodeSelector(claim.Status.Allocation.NodeSelector, pl.enableSemverComparisonOperators)
 				if err != nil {
 					return nil, statusError(logger, err)
 				}
@@ -556,12 +558,13 @@ func (pl *DynamicResources) PreFilter(ctx context.Context, state fwk.CycleState,
 
 func AllocatorFeatures(fts feature.Features) structured.Features {
 	return structured.Features{
-		AdminAccess:            fts.EnableDRAAdminAccess,
-		PrioritizedList:        fts.EnableDRAPrioritizedList,
-		PartitionableDevices:   fts.EnableDRAPartitionableDevices,
-		DeviceTaints:           fts.EnableDRADeviceTaints,
-		DeviceBindingAndStatus: fts.EnableDRADeviceBindingConditions && fts.EnableDRAResourceClaimDeviceStatus,
-		ConsumableCapacity:     fts.EnableDRAConsumableCapacity,
+		AdminAccess:               fts.EnableDRAAdminAccess,
+		PrioritizedList:           fts.EnableDRAPrioritizedList,
+		PartitionableDevices:      fts.EnableDRAPartitionableDevices,
+		DeviceTaints:              fts.EnableDRADeviceTaints,
+		DeviceBindingAndStatus:    fts.EnableDRADeviceBindingConditions && fts.EnableDRAResourceClaimDeviceStatus,
+		ConsumableCapacity:        fts.EnableDRAConsumableCapacity,
+		SemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
 	}
 }
 

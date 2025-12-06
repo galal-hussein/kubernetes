@@ -24,9 +24,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/features"
 
 	"k8s.io/apimachinery/pkg/api/validate/content"
 	"k8s.io/apimachinery/pkg/selection"
@@ -216,10 +214,6 @@ func NewRequirement(key string, op selection.Operator, vals []string, opts ...fi
 			}
 		}
 	case selection.VersionEquals, selection.VersionGreaterThan, selection.VersionLessThan:
-		if !utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) {
-			allErrs = append(allErrs, field.NotSupported(path.Child("operator"), op, validRequirementOperators))
-			break
-		}
 		if len(vals) != 1 {
 			allErrs = append(allErrs, field.Invalid(valuePath, vals, "for 'SemverLt', 'SemverGt', 'SemverEq' operators, exactly one value is required"))
 		}
@@ -307,10 +301,6 @@ func (r *Requirement) Matches(ls Labels) bool {
 		}
 		return (r.operator == selection.GreaterThan && lsValue > rValue) || (r.operator == selection.LessThan && lsValue < rValue)
 	case selection.VersionEquals, selection.VersionGreaterThan, selection.VersionLessThan:
-		if !utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators) {
-			return false
-		}
-
 		val, exists := ls.Lookup(r.key)
 		if !exists {
 			return false

@@ -119,10 +119,11 @@ func New(_ context.Context, plArgs runtime.Object, h fwk.Handle, fts feature.Fea
 		parallelizer:       h.Parallelizer(),
 		sharedLister:       h.SnapshotSharedLister(),
 		defaultConstraints: args.DefaultConstraints,
-		enableNodeInclusionPolicyInPodTopologySpread: fts.EnableNodeInclusionPolicyInPodTopologySpread,
-		enableMatchLabelKeysInPodTopologySpread:      fts.EnableMatchLabelKeysInPodTopologySpread,
-		enableSchedulingQueueHint:                    fts.EnableSchedulingQueueHint,
-		enableTaintTolerationComparisonOperators:     fts.EnableTaintTolerationComparisonOperators,
+		enableNodeInclusionPolicyInPodTopologySpread:      fts.EnableNodeInclusionPolicyInPodTopologySpread,
+		enableMatchLabelKeysInPodTopologySpread:           fts.EnableMatchLabelKeysInPodTopologySpread,
+		enableSchedulingQueueHint:                         fts.EnableSchedulingQueueHint,
+		enableTaintTolerationComparisonOperators:          fts.EnableTaintTolerationComparisonOperators,
+		enableAffinityTolerationSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
 	}
 	if args.DefaultingType == config.SystemDefaulting {
 		pl.defaultConstraints = systemDefaultConstraints

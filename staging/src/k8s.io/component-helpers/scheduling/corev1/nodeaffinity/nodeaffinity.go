@@ -37,8 +37,8 @@ type LazyErrorNodeSelector struct {
 }
 
 // NewNodeSelector returns a NodeSelector or aggregate parsing errors found.
-func NewNodeSelector(ns *v1.NodeSelector, opts ...field.PathOption) (*NodeSelector, error) {
-	lazy := NewLazyErrorNodeSelector(ns, opts...)
+func NewNodeSelector(ns *v1.NodeSelector, enableSemverComparisonOperators bool, opts ...field.PathOption) (*NodeSelector, error) {
+	lazy := NewLazyErrorNodeSelector(ns, enableSemverComparisonOperators, opts...)
 	var errs []error
 	for _, term := range lazy.terms {
 		if len(term.parseErrs) > 0 {
@@ -53,7 +53,7 @@ func NewNodeSelector(ns *v1.NodeSelector, opts ...field.PathOption) (*NodeSelect
 
 // NewLazyErrorNodeSelector creates a NodeSelector that only reports parse
 // errors when no terms match.
-func NewLazyErrorNodeSelector(ns *v1.NodeSelector, opts ...field.PathOption) *LazyErrorNodeSelector {
+func NewLazyErrorNodeSelector(ns *v1.NodeSelector, enableSemverComparisonOperators bool, opts ...field.PathOption) *LazyErrorNodeSelector {
 	p := field.ToPath(opts...)
 	parsedTerms := make([]nodeSelectorTerm, 0, len(ns.NodeSelectorTerms))
 	path := p.Child("nodeSelectorTerms")
@@ -63,7 +63,7 @@ func NewLazyErrorNodeSelector(ns *v1.NodeSelector, opts ...field.PathOption) *La
 			continue
 		}
 		p := path.Index(i)
-		parsedTerms = append(parsedTerms, newNodeSelectorTerm(&term, p))
+		parsedTerms = append(parsedTerms, newNodeSelectorTerm(&term, p, enableSemverComparisonOperators))
 	}
 	return &LazyErrorNodeSelector{
 		terms: parsedTerms,
@@ -109,7 +109,7 @@ type PreferredSchedulingTerms struct {
 
 // NewPreferredSchedulingTerms returns a PreferredSchedulingTerms or all the parsing errors found.
 // If a v1.PreferredSchedulingTerm has a 0 weight, its parsing is skipped.
-func NewPreferredSchedulingTerms(terms []v1.PreferredSchedulingTerm, opts ...field.PathOption) (*PreferredSchedulingTerms, error) {
+func NewPreferredSchedulingTerms(terms []v1.PreferredSchedulingTerm, enableSemverComparisonOperators bool, opts ...field.PathOption) (*PreferredSchedulingTerms, error) {
 	p := field.ToPath(opts...)
 	var errs []error
 	parsedTerms := make([]preferredSchedulingTerm, 0, len(terms))
@@ -119,7 +119,7 @@ func NewPreferredSchedulingTerms(terms []v1.PreferredSchedulingTerm, opts ...fie
 			continue
 		}
 		parsedTerm := preferredSchedulingTerm{
-			nodeSelectorTerm: newNodeSelectorTerm(&term.Preference, path),
+			nodeSelectorTerm: newNodeSelectorTerm(&term.Preference, path, enableSemverComparisonOperators),
 			weight:           int(term.Weight),
 		}
 		if len(parsedTerm.parseErrs) > 0 {
@@ -167,12 +167,12 @@ type nodeSelectorTerm struct {
 	parseErrs   []error
 }
 
-func newNodeSelectorTerm(term *v1.NodeSelectorTerm, path *field.Path) nodeSelectorTerm {
+func newNodeSelectorTerm(term *v1.NodeSelectorTerm, path *field.Path, enableSemverComparisonOperator bool) nodeSelectorTerm {
 	var parsedTerm nodeSelectorTerm
 	var errs []error
 	if len(term.MatchExpressions) != 0 {
 		p := path.Child("matchExpressions")
-		parsedTerm.matchLabels, errs = nodeSelectorRequirementsAsSelector(term.MatchExpressions, p)
+		parsedTerm.matchLabels, errs = nodeSelectorRequirementsAsSelector(term.MatchExpressions, p, enableSemverComparisonOperator)
 		if errs != nil {
 			parsedTerm.parseErrs = append(parsedTerm.parseErrs, errs...)
 		}
@@ -211,7 +211,7 @@ var validSelectorOperators = []v1.NodeSelectorOperator{
 
 // nodeSelectorRequirementsAsSelector converts the []NodeSelectorRequirement api type into a struct that implements
 // labels.Selector.
-func nodeSelectorRequirementsAsSelector(nsm []v1.NodeSelectorRequirement, path *field.Path) (labels.Selector, []error) {
+func nodeSelectorRequirementsAsSelector(nsm []v1.NodeSelectorRequirement, path *field.Path, enableSemverComparisonOperators bool) (labels.Selector, []error) {
 	if len(nsm) == 0 {
 		return labels.Nothing(), nil
 	}
@@ -234,10 +234,22 @@ func nodeSelectorRequirementsAsSelector(nsm []v1.NodeSelectorRequirement, path *
 		case v1.NodeSelectorOpLt:
 			op = selection.LessThan
 		case v1.NodeSelectorOpSemverEq:
+			if !enableSemverComparisonOperators {
+				errs = append(errs, field.NotSupported(p.Child("operator"), expr.Operator, validSelectorOperators))
+				continue
+			}
 			op = selection.VersionEquals
 		case v1.NodeSelectorOpSemverLt:
+			if !enableSemverComparisonOperators {
+				errs = append(errs, field.NotSupported(p.Child("operator"), expr.Operator, validSelectorOperators))
+				continue
+			}
 			op = selection.VersionLessThan
 		case v1.NodeSelectorOpSemverGt:
+			if !enableSemverComparisonOperators {
+				errs = append(errs, field.NotSupported(p.Child("operator"), expr.Operator, validSelectorOperators))
+				continue
+			}
 			op = selection.VersionGreaterThan
 		default:
 			errs = append(errs, field.NotSupported(p.Child("operator"), expr.Operator, validSelectorOperators))
@@ -309,7 +321,7 @@ type RequiredNodeAffinity struct {
 }
 
 // GetRequiredNodeAffinity returns the parsing result of pod's nodeSelector and nodeAffinity.
-func GetRequiredNodeAffinity(pod *v1.Pod) RequiredNodeAffinity {
+func GetRequiredNodeAffinity(pod *v1.Pod, enableSemverComparisonOperators bool) RequiredNodeAffinity {
 	var selector labels.Selector
 	if len(pod.Spec.NodeSelector) > 0 {
 		selector = labels.SelectorFromSet(pod.Spec.NodeSelector)
@@ -319,7 +331,7 @@ func GetRequiredNodeAffinity(pod *v1.Pod) RequiredNodeAffinity {
 	if pod.Spec.Affinity != nil &&
 		pod.Spec.Affinity.NodeAffinity != nil &&
 		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
-		affinity = NewLazyErrorNodeSelector(pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+		affinity = NewLazyErrorNodeSelector(pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution, enableSemverComparisonOperators)
 	}
 	return RequiredNodeAffinity{labelSelector: selector, nodeSelector: affinity}
 }

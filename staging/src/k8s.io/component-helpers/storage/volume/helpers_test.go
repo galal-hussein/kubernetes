@@ -196,7 +196,7 @@ func TestCheckVolumeNodeAffinity(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		err := CheckNodeAffinity(c.pv, nodeLabels)
+		err := CheckNodeAffinity(c.pv, nodeLabels, false)
 
 		if err != nil && c.expectSuccess {
 			t.Errorf("CheckTopology %v returned error: %v", c.name, err)

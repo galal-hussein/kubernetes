@@ -323,7 +323,7 @@ func TestFindMatchVolumeWithNode(t *testing.T) {
 	for name, scenario := range scenarios {
 		for _, enabled := range scenario.vacEnabled {
 			name := fmt.Sprintf("[VolumeAttributiesClass: %v] %s", enabled, name)
-			volume, err := FindMatchingVolume(scenario.claim, scenario.volumes, scenario.node, scenario.excludedVolumes, true, enabled)
+			volume, err := FindMatchingVolume(scenario.claim, scenario.volumes, scenario.node, scenario.excludedVolumes, true, enabled, false)
 			if scenario.expectErr && err == nil {
 				t.Errorf("Expected error for scenario: %s", name)
 			}

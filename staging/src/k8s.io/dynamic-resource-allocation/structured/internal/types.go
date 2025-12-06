@@ -74,6 +74,8 @@ type Features struct {
 	DeviceTaints           bool
 	PartitionableDevices   bool
 	PrioritizedList        bool
+	// add a feature option to affinity semver comparison operators
+	SemverComparisonOperators bool
 }
 
 // Set returns all features which are set to true.

@@ -189,7 +189,8 @@ func FindMatchingVolume(
 	node *v1.Node,
 	excludedVolumes map[string]*v1.PersistentVolume,
 	delayBinding bool,
-	vacEnabled bool) (*v1.PersistentVolume, error) {
+	vacEnabled bool,
+	enableSemverComparisonOperators bool) (*v1.PersistentVolume, error) {
 
 	if !vacEnabled {
 		claimVAC := ptr.Deref(claim.Spec.VolumeAttributesClassName, "")
@@ -259,7 +260,7 @@ func FindMatchingVolume(
 			// is satisfied by the node
 			// CheckNodeAffinity is the most expensive call in this loop.
 			// We should check cheaper conditions first or consider optimizing this function.
-			err := CheckNodeAffinity(volume, node.Labels)
+			err := CheckNodeAffinity(volume, node.Labels, enableSemverComparisonOperators)
 			if err != nil {
 				nodeAffinityValid = false
 			}

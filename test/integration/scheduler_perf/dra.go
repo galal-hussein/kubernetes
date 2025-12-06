@@ -364,11 +364,12 @@ claims:
 			AggregatedCapacity:       aggregatedCapacity,
 		}
 		allocator, err := structured.NewAllocator(tCtx, structured.Features{
-			PrioritizedList:      utilfeature.DefaultFeatureGate.Enabled(features.DRAPrioritizedList),
-			AdminAccess:          utilfeature.DefaultFeatureGate.Enabled(features.DRAAdminAccess),
-			DeviceTaints:         utilfeature.DefaultFeatureGate.Enabled(features.DRADeviceTaints),
-			PartitionableDevices: utilfeature.DefaultFeatureGate.Enabled(features.DRAPartitionableDevices),
-			ConsumableCapacity:   utilfeature.DefaultFeatureGate.Enabled(features.DRAConsumableCapacity),
+			PrioritizedList:           utilfeature.DefaultFeatureGate.Enabled(features.DRAPrioritizedList),
+			AdminAccess:               utilfeature.DefaultFeatureGate.Enabled(features.DRAAdminAccess),
+			DeviceTaints:              utilfeature.DefaultFeatureGate.Enabled(features.DRADeviceTaints),
+			PartitionableDevices:      utilfeature.DefaultFeatureGate.Enabled(features.DRAPartitionableDevices),
+			ConsumableCapacity:        utilfeature.DefaultFeatureGate.Enabled(features.DRAConsumableCapacity),
+			SemverComparisonOperators: utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators),
 		}, allocatedState, draManager.DeviceClasses(), slices, celCache)
 		tCtx.ExpectNoError(err, "create allocator")
 

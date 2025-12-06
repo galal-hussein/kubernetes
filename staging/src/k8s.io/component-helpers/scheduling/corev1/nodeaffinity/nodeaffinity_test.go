@@ -148,7 +148,7 @@ func TestNodeSelectorMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nodeSelector, err := NewNodeSelector(&tt.nodeSelector)
+			nodeSelector, err := NewNodeSelector(&tt.nodeSelector, false)
 			if diff := cmp.Diff(tt.wantErr, err, ignoreBadValue); diff != "" {
 				t.Errorf("NewNodeSelector returned unexpected error (-want,+got):\n%s", diff)
 			}
@@ -279,7 +279,7 @@ func TestPreferredSchedulingTermsScore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prefSchedTerms, err := NewPreferredSchedulingTerms(tt.prefSchedTerms)
+			prefSchedTerms, err := NewPreferredSchedulingTerms(tt.prefSchedTerms, false)
 			if diff := cmp.Diff(tt.wantErr, err, ignoreBadValue); diff != "" {
 				t.Errorf("NewPreferredSchedulingTerms returned unexpected error (-want,+got):\n%s", diff)
 			}
@@ -359,7 +359,7 @@ func TestNodeSelectorRequirementsAsSelector(t *testing.T) {
 	}
 
 	for i, tc := range tc {
-		out, err := nodeSelectorRequirementsAsSelector(tc.in, field.NewPath("root"))
+		out, err := nodeSelectorRequirementsAsSelector(tc.in, field.NewPath("root"), false)
 		if diff := cmp.Diff(tc.wantErr, err, ignoreBadValue); diff != "" {
 			t.Errorf("nodeSelectorRequirementsAsSelector returned unexpected error (-want,+got):\n%s", diff)
 		}
@@ -1048,7 +1048,7 @@ func TestPodMatchesNodeSelectorAndAffinityTerms(t *testing.T) {
 				Name:   test.nodeName,
 				Labels: test.labels,
 			}}
-			got, _ := GetRequiredNodeAffinity(test.pod).Match(&node)
+			got, _ := GetRequiredNodeAffinity(test.pod, false).Match(&node)
 			if test.want != got {
 				t.Errorf("expected: %v got %v", test.want, got)
 			}

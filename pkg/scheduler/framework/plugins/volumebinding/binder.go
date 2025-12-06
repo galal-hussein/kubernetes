@@ -207,9 +207,10 @@ type PodVolumeClaims struct {
 }
 
 type volumeBinder struct {
-	kubeClient                  clientset.Interface
-	enableVolumeAttributesClass bool
-	enableCSIMigrationPortworx  bool
+	kubeClient                      clientset.Interface
+	enableVolumeAttributesClass     bool
+	enableCSIMigrationPortworx      bool
+	enableSemverComparisonOperators bool
 
 	classLister   storagelisters.StorageClassLister
 	podLister     corelisters.PodLister
@@ -260,17 +261,18 @@ func NewVolumeBinder(
 		return nil, err
 	}
 	b := &volumeBinder{
-		kubeClient:                  kubeClient,
-		enableVolumeAttributesClass: fts.EnableVolumeAttributesClass,
-		enableCSIMigrationPortworx:  fts.EnableCSIMigrationPortworx,
-		podLister:                   podInformer.Lister(),
-		classLister:                 storageClassInformer.Lister(),
-		nodeLister:                  nodeInformer.Lister(),
-		csiNodeLister:               csiNodeInformer.Lister(),
-		pvcCache:                    pvcCache,
-		pvCache:                     pvCache,
-		bindTimeout:                 bindTimeout,
-		translator:                  csitrans.New(),
+		kubeClient:                      kubeClient,
+		enableVolumeAttributesClass:     fts.EnableVolumeAttributesClass,
+		enableCSIMigrationPortworx:      fts.EnableCSIMigrationPortworx,
+		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		podLister:                       podInformer.Lister(),
+		classLister:                     storageClassInformer.Lister(),
+		nodeLister:                      nodeInformer.Lister(),
+		csiNodeLister:                   csiNodeInformer.Lister(),
+		pvcCache:                        pvcCache,
+		pvCache:                         pvCache,
+		bindTimeout:                     bindTimeout,
+		translator:                      csitrans.New(),
 	}
 
 	b.csiDriverLister = capacityCheck.CSIDriverInformer.Lister()
@@ -647,7 +649,8 @@ func (b *volumeBinder) checkBindings(logger klog.Logger, pod *v1.Pod, bindings [
 		}
 
 		// Check PV's node affinity (the node might not have the proper label)
-		if err := volume.CheckNodeAffinity(pv, node.Labels); err != nil {
+
+		if err := volume.CheckNodeAffinity(pv, node.Labels, b.enableSemverComparisonOperators); err != nil {
 			return false, fmt.Errorf("pv %q node affinity doesn't match node %q: %w", pv.Name, node.Name, err)
 		}
 
@@ -705,7 +708,7 @@ func (b *volumeBinder) checkBindings(logger klog.Logger, pod *v1.Pod, bindings [
 				return false, err
 			}
 
-			if err := volume.CheckNodeAffinity(pv, node.Labels); err != nil {
+			if err := volume.CheckNodeAffinity(pv, node.Labels, b.enableSemverComparisonOperators); err != nil {
 				return false, fmt.Errorf("pv %q node affinity doesn't match node %q: %w", pv.Name, node.Name, err)
 			}
 		}
@@ -858,7 +861,7 @@ func (b *volumeBinder) checkBoundClaims(logger klog.Logger, claims []*v1.Persist
 			return false, true, err
 		}
 
-		err = volume.CheckNodeAffinity(pv, node.Labels)
+		err = volume.CheckNodeAffinity(pv, node.Labels, b.enableSemverComparisonOperators)
 		if err != nil {
 			logger.V(5).Info("PersistentVolume and node mismatch for pod", "PV", klog.KRef("", pvName), "node", klog.KObj(node), "pod", klog.KObj(pod), "err", err)
 			return false, true, nil
@@ -886,7 +889,7 @@ func (b *volumeBinder) findMatchingVolumes(logger klog.Logger, pod *v1.Pod, clai
 		pvs := unboundVolumesDelayBinding[storageClassName]
 
 		// Find a matching PV
-		pv, err := volume.FindMatchingVolume(pvc, pvs, node, chosenPVs, true, b.enableVolumeAttributesClass)
+		pv, err := volume.FindMatchingVolume(pvc, pvs, node, chosenPVs, true, b.enableVolumeAttributesClass, b.enableSemverComparisonOperators)
 		if err != nil {
 			return false, nil, nil, err
 		}
