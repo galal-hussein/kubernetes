@@ -4500,7 +4500,7 @@ type PodValidationOptions struct {
 	AllowUserNamespacesWithVolumeDevices bool
 	// Allow semver node affinity and toleration comparison operators (SemverGt, SemverLt, SemverEq)
 	AllowAffinityTolerationSemverComparisonOperators bool
-	// Allow toleration and affinity comparison operators (Lt, Gt)
+	// Allow taint toleration comparison operators (Lt, Gt)
 	AllowTaintTolerationComparisonOperators bool
 	// Allow hostNetwork pods to use user namespaces
 	AllowUserNamespacesHostNetworkSupport bool
