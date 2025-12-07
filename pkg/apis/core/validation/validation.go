@@ -4498,9 +4498,9 @@ type PodValidationOptions struct {
 	AllowContainerRestartPolicyRules bool
 	// Allow user namespaces with volume devices, even though they will not function properly (should only be tolerated in updates of objects which already have this invalid configuration).
 	AllowUserNamespacesWithVolumeDevices bool
-	// Allow taint toleration comparison operators (SemverGt, SemverLt, SemverEq)
+	// Allow semver node affinity and toleration comparison operators (SemverGt, SemverLt, SemverEq)
 	AllowAffinityTolerationSemverComparisonOperators bool
-	// Allow semver toleration and affinity comparison operators (Lt, Gt)
+	// Allow toleration and affinity comparison operators (Lt, Gt)
 	AllowTaintTolerationComparisonOperators bool
 	// Allow hostNetwork pods to use user namespaces
 	AllowUserNamespacesHostNetworkSupport bool
