@@ -122,7 +122,6 @@ func compareNumericValues(logger klog.Logger, tolerationVal, taintVal string, op
 
 // compareSemVerValues performs Semver comparison between toleration and taint values
 func compareSemVerValues(logger klog.Logger, tolerationVal, taintVal string, op TolerationOperator) bool {
-
 	tolerationVersion, err := semver.ParseTolerant(tolerationVal)
 	if err != nil {
 		logger.Error(err, "failed to parse tolartion value as semantic version", "toleration", tolerationVal)
@@ -132,6 +131,7 @@ func compareSemVerValues(logger klog.Logger, tolerationVal, taintVal string, op 
 	taintVersion, err := semver.ParseTolerant(taintVal)
 	if err != nil {
 		logger.Error(err, "failed to parse taint value as semantic version", "taint", taintVal)
+		return false
 	}
 
 	switch op {
