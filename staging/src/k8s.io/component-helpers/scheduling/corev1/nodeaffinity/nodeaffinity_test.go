@@ -1055,3 +1055,312 @@ func TestPodMatchesNodeSelectorAndAffinityTerms(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeSelectorSemverOperators(t *testing.T) {
+	tests := []struct {
+		name                            string
+		nodeSelector                    v1.NodeSelector
+		node                            *v1.Node
+		enableSemverComparisonOperators bool
+		wantErr                         bool
+		wantMatch                       bool
+	}{
+		{
+			name: "SemverEq operator with matching version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverEq,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        true,
+		},
+		{
+			name: "SemverEq operator with non-matching version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverEq,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.29.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        false,
+		},
+		{
+			name: "SemverGt operator with greater version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverGt,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.29.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        true,
+		},
+		{
+			name: "SemverGt operator with lesser version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverGt,
+					Values:   []string{"1.29.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        false,
+		},
+		{
+			name: "SemverLt operator with lesser version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverLt,
+					Values:   []string{"1.29.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        true,
+		},
+		{
+			name: "SemverLt operator with greater version - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverLt,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.29.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        false,
+		},
+		{
+			name: "SemverEq operator - feature disabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverEq,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0"},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+		{
+			name: "SemverGt operator - feature disabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverGt,
+					Values:   []string{"1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.29.0"},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+		{
+			name: "SemverLt operator - feature disabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverLt,
+					Values:   []string{"1.29.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0"},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+		{
+			name: "SemverEq operator with v prefix - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverEq,
+					Values:   []string{"v1.28.0"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "v1.28.0"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        true,
+		},
+		{
+			name: "SemverGt operator with pre-release versions - feature enabled",
+			nodeSelector: v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{{
+				MatchExpressions: []v1.NodeSelectorRequirement{{
+					Key:      "node.kubernetes.io/version",
+					Operator: v1.NodeSelectorOpSemverGt,
+					Values:   []string{"1.28.0-alpha.1"},
+				}},
+			}}},
+			node: &v1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/version": "1.28.0-alpha.2"},
+			}},
+			enableSemverComparisonOperators: true,
+			wantMatch:                        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodeSelector, err := NewNodeSelector(&tt.nodeSelector, tt.enableSemverComparisonOperators)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("NewNodeSelector expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("NewNodeSelector returned unexpected error: %v", err)
+				return
+			}
+			got := nodeSelector.Match(tt.node)
+			if tt.wantMatch != got {
+				t.Errorf("expected match: %v, got: %v", tt.wantMatch, got)
+			}
+		})
+	}
+}
+
+func TestPreferredSchedulingTermsSemverOperators(t *testing.T) {
+	tests := []struct {
+		name                            string
+		prefSchedTerms                  []v1.PreferredSchedulingTerm
+		enableSemverComparisonOperators bool
+		wantErr                         bool
+	}{
+		{
+			name: "SemverEq operator in preferred scheduling term - feature enabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 10,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverEq,
+						Values:   []string{"1.28.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: true,
+			wantErr:                          false,
+		},
+		{
+			name: "SemverGt operator in preferred scheduling term - feature enabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 5,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverGt,
+						Values:   []string{"1.27.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: true,
+			wantErr:                          false,
+		},
+		{
+			name: "SemverLt operator in preferred scheduling term - feature enabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 3,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverLt,
+						Values:   []string{"1.30.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: true,
+			wantErr:                          false,
+		},
+		{
+			name: "SemverEq operator in preferred scheduling term - feature disabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 10,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverEq,
+						Values:   []string{"1.28.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+		{
+			name: "SemverGt operator in preferred scheduling term - feature disabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 5,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverGt,
+						Values:   []string{"1.27.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+		{
+			name: "SemverLt operator in preferred scheduling term - feature disabled",
+			prefSchedTerms: []v1.PreferredSchedulingTerm{{
+				Weight: 3,
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/version",
+						Operator: v1.NodeSelectorOpSemverLt,
+						Values:   []string{"1.30.0"},
+					}},
+				},
+			}},
+			enableSemverComparisonOperators: false,
+			wantErr:                          true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewPreferredSchedulingTerms(tt.prefSchedTerms, tt.enableSemverComparisonOperators)
+			if tt.wantErr && err == nil {
+				t.Errorf("NewPreferredSchedulingTerms expected error but got none")
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("NewPreferredSchedulingTerms returned unexpected error: %v", err)
+			}
+		})
+	}
+}

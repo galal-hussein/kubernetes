@@ -247,6 +247,168 @@ func TestTolerationToleratesTaint(t *testing.T) {
 			expectTolerated: false,
 			enableTaintTolerationComparisonOperatorsFG: true,
 		},
+		{
+			description: "toleration with SemverEq operator - taint version equal to toleration version, expect tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverEq,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: true,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverEq operator - taint version different from toleration version, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverEq,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.29.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverGt operator - taint version greater than toleration version, expect tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverGt,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.29.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: true,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverGt operator - taint version less than toleration version, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverGt,
+				Value:    "1.29.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverLt operator - taint version less than toleration version, expect tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverLt,
+				Value:    "1.29.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: true,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverLt operator - taint version greater than toleration version, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverLt,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.29.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverGt operator - invalid taint semver value, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverGt,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "invalid-version",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			expectError:     true,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverGt operator - invalid toleration semver value, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverGt,
+				Value:    "not-a-version",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			expectError:     true,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with SemverEq operator - equal versions with different patch, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverEq,
+				Value:    "1.28.1",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			enableTaintTolerationComparisonOperatorsFG: true,
+		},
+		{
+			description: "toleration with semver operator when feature gate disabled, expect not tolerated",
+			toleration: Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: TolerationOpSemverEq,
+				Value:    "1.28.0",
+				Effect:   TaintEffectNoSchedule,
+			},
+			taint: Taint{
+				Key:    "node.kubernetes.io/version",
+				Value:  "1.28.0",
+				Effect: TaintEffectNoSchedule,
+			},
+			expectTolerated: false,
+			enableTaintTolerationComparisonOperatorsFG: false,
+		},
 	}
 	for _, tc := range testCases {
 		if tolerated := tc.toleration.ToleratesTaint(logger, &tc.taint, tc.enableTaintTolerationComparisonOperatorsFG, tc.enableTaintTolerationComparisonOperatorsFG); tc.expectTolerated != tolerated {
@@ -492,6 +654,237 @@ func TestCompareNumericValues(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			result := compareNumericValues(logger, tc.tolerationVal, tc.taintVal, tc.operator)
+			if result != tc.expectedResult {
+				t.Errorf("[%s] expected %v, got %v: tolerationVal=%q, taintVal=%q, operator=%v",
+					tc.description, tc.expectedResult, result, tc.tolerationVal, tc.taintVal, tc.operator)
+			}
+		})
+	}
+}
+
+func TestCompareSemVerValues(t *testing.T) {
+	logger, _ := ktesting.NewTestContext(t)
+	testCases := []struct {
+		description    string
+		tolerationVal  string
+		taintVal       string
+		operator       TolerationOperator
+		expectedResult bool
+	}{
+		// Valid SemverEq operator cases
+		{
+			description:    "SemverEq operator - equal versions, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverEq operator - different versions, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.29.0",
+			operator:       TolerationOpSemverEq,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverEq operator - different patch versions, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.1",
+			operator:       TolerationOpSemverEq,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverEq operator - with v prefix, expect true",
+			tolerationVal:  "v1.28.0",
+			taintVal:       "v1.28.0",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverEq operator - mixed v prefix, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "v1.28.0",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+
+		// Valid SemverGt operator cases
+		{
+			description:    "SemverGt operator - taint version greater, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.29.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverGt operator - taint version less, expect false",
+			tolerationVal:  "1.29.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverGt operator - equal versions, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverGt operator - patch version greater, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.1",
+			operator:       TolerationOpSemverGt,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverGt operator - minor version greater, expect true",
+			tolerationVal:  "1.28.5",
+			taintVal:       "1.29.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: true,
+		},
+
+		// Valid SemverLt operator cases
+		{
+			description:    "SemverLt operator - taint version less, expect true",
+			tolerationVal:  "1.29.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverLt,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverLt operator - taint version greater, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.29.0",
+			operator:       TolerationOpSemverLt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverLt operator - equal versions, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverLt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverLt operator - patch version less, expect true",
+			tolerationVal:  "1.28.1",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverLt,
+			expectedResult: true,
+		},
+
+		// Invalid toleration values - should return false
+		{
+			description:    "SemverGt operator - invalid toleration value, expect false",
+			tolerationVal:  "invalid-version",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverGt operator - empty toleration value, expect false",
+			tolerationVal:  "",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverEq operator - missing patch toleration semver, expect true",
+			tolerationVal:  "1.28",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+
+		// Invalid taint values - should return false (tests the bug fix)
+		{
+			description:    "SemverGt operator - invalid taint value, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "not-a-version",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverGt operator - empty taint value, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "",
+			operator:       TolerationOpSemverGt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverLt operator - invalid taint value, expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "invalid",
+			operator:       TolerationOpSemverLt,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverEq operator - missing patch taint semver, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+
+		// Invalid operator - should return false
+		{
+			description:    "Equal operator (unsupported for semver comparison), expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpEqual,
+			expectedResult: false,
+		},
+		{
+			description:    "Exists operator (unsupported for semver comparison), expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpExists,
+			expectedResult: false,
+		},
+		{
+			description:    "Gt operator (unsupported for semver comparison), expect false",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0",
+			operator:       TolerationOpGt,
+			expectedResult: false,
+		},
+
+		// Complex version strings with pre-release and metadata
+		{
+			description:    "SemverEq operator - versions with pre-release, equal, expect true",
+			tolerationVal:  "1.28.0-alpha.1",
+			taintVal:       "1.28.0-alpha.1",
+			operator:       TolerationOpSemverEq,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverEq operator - versions with different pre-release, expect false",
+			tolerationVal:  "1.28.0-alpha.1",
+			taintVal:       "1.28.0-alpha.2",
+			operator:       TolerationOpSemverEq,
+			expectedResult: false,
+		},
+		{
+			description:    "SemverGt operator - pre-release version comparison, expect true",
+			tolerationVal:  "1.28.0-alpha.1",
+			taintVal:       "1.28.0-alpha.2",
+			operator:       TolerationOpSemverGt,
+			expectedResult: true,
+		},
+		{
+			description:    "SemverLt operator - release vs pre-release, expect true",
+			tolerationVal:  "1.28.0",
+			taintVal:       "1.28.0-alpha.1",
+			operator:       TolerationOpSemverLt,
+			expectedResult: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := compareSemVerValues(logger, tc.tolerationVal, tc.taintVal, tc.operator)
 			if result != tc.expectedResult {
 				t.Errorf("[%s] expected %v, got %v: tolerationVal=%q, taintVal=%q, operator=%v",
 					tc.description, tc.expectedResult, result, tc.tolerationVal, tc.taintVal, tc.operator)

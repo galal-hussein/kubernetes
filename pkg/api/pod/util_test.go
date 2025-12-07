@@ -6417,6 +6417,167 @@ func TestAllowTaintTolerationComparisonOperators(t *testing.T) {
 	}
 }
 
+func TestAllowTaintTolerationNodeAffinitySemverComparisonOperators(t *testing.T) {
+	tests := []struct {
+		name           string
+		featureEnabled bool
+		oldPodSpec     *api.PodSpec
+		expected       bool
+	}{
+		{
+			name:           "feature gate enabled, nil old pod spec",
+			featureEnabled: true,
+			oldPodSpec:     nil,
+			expected:       true,
+		},
+		{
+			name:           "feature gate enabled, old pod spec without semver operators",
+			featureEnabled: true,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "key1", Operator: api.TolerationOpEqual, Value: "value1"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate enabled, old pod spec with SemverEq operator in toleration",
+			featureEnabled: true,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "node.kubernetes.io/version", Operator: api.TolerationOpSemverEq, Value: "1.28.0"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, nil old pod spec",
+			featureEnabled: false,
+			oldPodSpec:     nil,
+			expected:       false,
+		},
+		{
+			name:           "feature gate disabled, old pod spec without semver operators",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "key1", Operator: api.TolerationOpEqual, Value: "value1"},
+					{Key: "key2", Operator: api.TolerationOpExists},
+				},
+			},
+			expected: false,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with SemverEq operator in toleration",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "node.kubernetes.io/version", Operator: api.TolerationOpSemverEq, Value: "1.28.0"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with SemverGt operator in toleration",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "node.kubernetes.io/version", Operator: api.TolerationOpSemverGt, Value: "1.28.0"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with SemverLt operator in toleration",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "node.kubernetes.io/version", Operator: api.TolerationOpSemverLt, Value: "1.29.0"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with mixed operators including SemverEq",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "key1", Operator: api.TolerationOpEqual, Value: "value1"},
+					{Key: "node.kubernetes.io/version", Operator: api.TolerationOpSemverEq, Value: "1.28.0"},
+					{Key: "key3", Operator: api.TolerationOpExists},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with SemverGt in preferred node affinity",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Affinity: &api.Affinity{
+					NodeAffinity: &api.NodeAffinity{
+						PreferredDuringSchedulingIgnoredDuringExecution: []api.PreferredSchedulingTerm{
+							{
+								Preference: api.NodeSelectorTerm{
+									MatchExpressions: []api.NodeSelectorRequirement{
+										{Key: "node.kubernetes.io/version", Operator: api.NodeSelectorOpSemverGt, Values: []string{"1.28.0"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec with SemverLt in required node affinity",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Affinity: &api.Affinity{
+					NodeAffinity: &api.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &api.NodeSelector{
+							NodeSelectorTerms: []api.NodeSelectorTerm{
+								{
+									MatchExpressions: []api.NodeSelectorRequirement{
+										{Key: "node.kubernetes.io/version", Operator: api.NodeSelectorOpSemverLt, Values: []string{"1.30.0"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:           "feature gate disabled, old pod spec without node affinity",
+			featureEnabled: false,
+			oldPodSpec: &api.PodSpec{
+				Tolerations: []api.Toleration{
+					{Key: "key1", Operator: api.TolerationOpEqual, Value: "value1"},
+				},
+			},
+			expected: false,
+		},
+		{
+			name:           "feature gate disabled, empty old pod spec",
+			featureEnabled: false,
+			oldPodSpec:     &api.PodSpec{},
+			expected:       false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.TaintTolerationNodeAffinitySemverComparisonOperators, test.featureEnabled)
+			actual := allowTaintTolerationNodeAffinitySemverComparisonOperators(test.oldPodSpec)
+			if test.expected != actual {
+				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
+		})
+	}
+}
+
 func TestDisabledWorkload(t *testing.T) {
 	podWithWorkload := &api.Pod{
 		Spec: api.PodSpec{

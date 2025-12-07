@@ -30140,6 +30140,288 @@ func TestNumericTolerationsWithFeatureGate(t *testing.T) {
 	}
 }
 
+func TestSemverTolerationsWithFeatureGate(t *testing.T) {
+	testCases := []struct {
+		name          string
+		toleration    core.Toleration
+		featureGateOn bool
+		errorMsg      string
+	}{
+		{
+			name: "SemverEq operator with valid semver value and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverEq,
+				Value:    "1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverGt operator with valid semver value and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverGt,
+				Value:    "1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverLt operator with valid semver value and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverLt,
+				Value:    "1.29.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverEq operator with v prefix and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverEq,
+				Value:    "v1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverGt operator with pre-release version and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverGt,
+				Value:    "1.28.0-alpha.1",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverEq operator with invalid semver value and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverEq,
+				Value:    "invalid-version",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+			errorMsg:      "tolerations[0].value: Invalid value",
+		},
+		{
+			name: "SemverGt operator with empty value and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverGt,
+				Value:    "",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+			errorMsg:      "tolerations[0].value: Invalid value",
+		},
+		{
+			name: "SemverLt operator with missing patch semver and feature gate enabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverLt,
+				Value:    "1.28",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverEq operator with feature gate disabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverEq,
+				Value:    "1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: false,
+			errorMsg:      "Unsupported value",
+		},
+		{
+			name: "SemverGt operator with feature gate disabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverGt,
+				Value:    "1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: false,
+			errorMsg:      "Unsupported value",
+		},
+		{
+			name: "SemverLt operator with feature gate disabled",
+			toleration: core.Toleration{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.TolerationOpSemverLt,
+				Value:    "1.28.0",
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			featureGateOn: false,
+			errorMsg:      "Unsupported value",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := PodValidationOptions{
+				AllowTaintTolerationNodeAffinitySemverComparisonOperators: tc.featureGateOn,
+			}
+			errs := ValidateTolerations([]core.Toleration{tc.toleration}, field.NewPath("tolerations"), opts)
+
+			if tc.errorMsg != "" {
+				if len(errs) == 0 {
+					t.Errorf("Expected error but got none")
+				} else if !strings.Contains(errs.ToAggregate().Error(), tc.errorMsg) {
+					t.Errorf("Expected error message to contain %q, got %q", tc.errorMsg, errs.ToAggregate().Error())
+				}
+			} else {
+				if len(errs) > 0 {
+					t.Errorf("Unexpected error(s): %v", errs)
+				}
+			}
+		})
+	}
+}
+
+func TestSemverNodeSelectorRequirementWithFeatureGate(t *testing.T) {
+	testCases := []struct {
+		name          string
+		requirement   core.NodeSelectorRequirement
+		featureGateOn bool
+		errorMsg      string
+	}{
+		{
+			name: "SemverEq operator with valid semver value and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverEq,
+				Values:   []string{"1.28.0"},
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverGt operator with valid semver value and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverGt,
+				Values:   []string{"1.28.0"},
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverLt operator with valid semver value and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverLt,
+				Values:   []string{"1.29.0"},
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverEq operator with v prefix and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverEq,
+				Values:   []string{"v1.28.0"},
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverGt operator with pre-release version and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverGt,
+				Values:   []string{"1.28.0-alpha.1"},
+			},
+			featureGateOn: true,
+		},
+		{
+			name: "SemverEq operator with invalid semver value and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverEq,
+				Values:   []string{"invalid-version"},
+			},
+			featureGateOn: true,
+			errorMsg:      "Invalid value",
+		},
+		{
+			name: "SemverGt operator with multiple values and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverGt,
+				Values:   []string{"1.28.0", "1.29.0"},
+			},
+			featureGateOn: true,
+			errorMsg:      "must be specified single value",
+		},
+		{
+			name: "SemverLt operator with no values and feature gate enabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverLt,
+				Values:   []string{},
+			},
+			featureGateOn: true,
+			errorMsg:      "must be specified single value",
+		},
+		{
+			name: "SemverEq operator with feature gate disabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverEq,
+				Values:   []string{"1.28.0"},
+			},
+			featureGateOn: false,
+			errorMsg:      "not a valid selector operator",
+		},
+		{
+			name: "SemverGt operator with feature gate disabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverGt,
+				Values:   []string{"1.28.0"},
+			},
+			featureGateOn: false,
+			errorMsg:      "not a valid selector operator",
+		},
+		{
+			name: "SemverLt operator with feature gate disabled",
+			requirement: core.NodeSelectorRequirement{
+				Key:      "node.kubernetes.io/version",
+				Operator: core.NodeSelectorOpSemverLt,
+				Values:   []string{"1.28.0"},
+			},
+			featureGateOn: false,
+			errorMsg:      "not a valid selector operator",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := PodValidationOptions{
+				AllowTaintTolerationNodeAffinitySemverComparisonOperators: tc.featureGateOn,
+			}
+			errs := ValidateNodeSelectorRequirement(tc.requirement, false, field.NewPath("requirement"), opts)
+
+			if tc.errorMsg != "" {
+				if len(errs) == 0 {
+					t.Errorf("Expected error but got none")
+				} else if !strings.Contains(errs.ToAggregate().Error(), tc.errorMsg) {
+					t.Errorf("Expected error message to contain %q, got %q", tc.errorMsg, errs.ToAggregate().Error())
+				}
+			} else {
+				if len(errs) > 0 {
+					t.Errorf("Unexpected error(s): %v", errs)
+				}
+			}
+		})
+	}
+}
+
 func TestAllRegistedNodeDeclaredFeatures(t *testing.T) {
 	// Test that feature registry is valid.
 	for _, feature := range ndf.AllFeatures {
