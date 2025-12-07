@@ -1672,17 +1672,21 @@ func tolerationNodeAffinitySemverComparisonOperatorsInUse(podSpec *api.PodSpec) 
 		}
 	}
 	// check if the semver operators are in use by node affinity
-	for _, preferredAffinityTerm := range podSpec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
-		for _, nodeSelectorReq := range preferredAffinityTerm.Preference.MatchExpressions {
-			if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
-				return true
+	if podSpec.Affinity != nil && podSpec.Affinity.NodeAffinity != nil {
+		for _, preferredAffinityTerm := range podSpec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+			for _, nodeSelectorReq := range preferredAffinityTerm.Preference.MatchExpressions {
+				if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
+					return true
+				}
 			}
 		}
-	}
-	for _, reqAffinityTerm := range podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
-		for _, nodeSelectorReq := range reqAffinityTerm.MatchExpressions {
-			if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
-				return true
+		if podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			for _, reqAffinityTerm := range podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
+				for _, nodeSelectorReq := range reqAffinityTerm.MatchExpressions {
+					if nodeSelectorReq.Operator == api.NodeSelectorOpSemverEq || nodeSelectorReq.Operator == api.NodeSelectorOpSemverGt || nodeSelectorReq.Operator == api.NodeSelectorOpSemverLt {
+						return true
+					}
+				}
 			}
 		}
 	}

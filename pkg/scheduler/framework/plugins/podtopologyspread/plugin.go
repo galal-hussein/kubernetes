@@ -123,7 +123,7 @@ func New(_ context.Context, plArgs runtime.Object, h fwk.Handle, fts feature.Fea
 		enableMatchLabelKeysInPodTopologySpread:           fts.EnableMatchLabelKeysInPodTopologySpread,
 		enableSchedulingQueueHint:                         fts.EnableSchedulingQueueHint,
 		enableTaintTolerationComparisonOperators:          fts.EnableTaintTolerationComparisonOperators,
-		enableAffinityTolerationSemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
+		enableTaintTolerationNodeAffinitySemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 	}
 	if args.DefaultingType == config.SystemDefaulting {
 		pl.defaultConstraints = systemDefaultConstraints
