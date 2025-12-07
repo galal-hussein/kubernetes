@@ -5017,7 +5017,7 @@ var nodeFieldSelectorValidators = map[string]func(string, bool) []string{
 }
 
 // ValidateNodeFieldSelectorRequirement tests that the specified NodeSelectorRequirement fields has valid data
-func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldPath *field.Path, opts PodValidationOptions) field.ErrorList {
+func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	switch req.Operator {
@@ -5052,7 +5052,7 @@ func ValidateNodeSelectorTerm(term core.NodeSelectorTerm, allowInvalidLabelValue
 	}
 
 	for j, req := range term.MatchFields {
-		allErrs = append(allErrs, ValidateNodeFieldSelectorRequirement(req, fldPath.Child("matchFields").Index(j), opts)...)
+		allErrs = append(allErrs, ValidateNodeFieldSelectorRequirement(req, fldPath.Child("matchFields").Index(j))...)
 	}
 
 	return allErrs
