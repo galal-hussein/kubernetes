@@ -4984,8 +4984,7 @@ func ValidateNodeSelectorRequirement(rq core.NodeSelectorRequirement, allowInval
 		}
 	case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
 		if !opts.AllowAffinityTolerationSemverComparisonOperators {
-			validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
-			allErrs = append(allErrs, field.NotSupported(fldPath.Child("operator"), rq.Operator, validValues))
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), rq.Operator, "not a valid selector operator"))
 			break
 		}
 		if len(rq.Values) != 1 {
@@ -5026,19 +5025,6 @@ func ValidateNodeFieldSelectorRequirement(req core.NodeSelectorRequirement, fldP
 		if len(req.Values) != 1 {
 			allErrs = append(allErrs, field.Required(fldPath.Child("values"),
 				"must be only one value when `operator` is 'In' or 'NotIn' for node field selector"))
-		}
-	case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
-		if !opts.AllowAffinityTolerationSemverComparisonOperators {
-			validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
-			allErrs = append(allErrs, field.NotSupported(fldPath.Child("operator"), req.Operator, validValues))
-			break
-		}
-		if len(req.Values) != 1 {
-			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified single value when `operator` is 'SemverLt' or 'SemverGt' or 'SemverEq'"))
-		}
-		// non-strictly validate semver version by using semver.ParseTolerant
-		if _, err := semver.ParseTolerant(req.Values[0]); err != nil {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("values"), req.Values, err.Error()))
 		}
 	default:
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), req.Operator, "not a valid selector operator"))
