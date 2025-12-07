@@ -40,12 +40,6 @@ import (
 // across the file.
 const (
 
-	// owner: @galal-hussein
-	//
-	// AffinityTaintTolerationSemverComparisonOperators enables semver comparison
-	// operators (SemverLt, SemverGt, SemverEq) for tolerations and node affinity
-	AffinityTaintTolerationSemverComparisonOperators featuregate.Feature = "AffinityTaintTolerationSemverComparisonOperators"
-
 	// owner: @aojea
 	//
 	// Allow kubelet to request a certificate without any Node IP available, only
@@ -1025,6 +1019,12 @@ const (
 	// Enables numeric comparison operators (Lt, Gt) for tolerations to match taints with threshold-based values.
 	TaintTolerationComparisonOperators featuregate.Feature = "TaintTolerationComparisonOperators"
 
+	// owner: @galal-hussein
+	//
+	// TaintTolerationNodeAffinitySemverComparisonOperators enables semver comparison
+	// operators (SemverLt, SemverGt, SemverEq) for tolerations and node affinity
+	TaintTolerationNodeAffinitySemverComparisonOperators featuregate.Feature = "TaintTolerationNodeAffinitySemverComparisonOperators"
+
 	// owner: @robscott
 	// kep: https://kep.k8s.io/2433
 	//
@@ -1128,10 +1128,6 @@ const (
 //
 // Entries are alphabetized.
 var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate.VersionedSpecs{
-	AffinityTaintTolerationSemverComparisonOperators: {
-		{Version: version.MustParse("1.36"), Default: false, PreRelease: featuregate.Alpha},
-	},
-
 	AllowDNSOnlyNodeCSR: {
 		{Version: version.MustParse("1.0"), Default: true, PreRelease: featuregate.GA},
 		{Version: version.MustParse("1.31"), Default: false, PreRelease: featuregate.Deprecated},
@@ -1872,6 +1868,10 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 		{Version: version.MustParse("1.35"), Default: false, PreRelease: featuregate.Alpha},
 	},
 
+	TaintTolerationNodeAffinitySemverComparisonOperators: {
+		{Version: version.MustParse("1.36"), Default: false, PreRelease: featuregate.Alpha},
+	},
+
 	TopologyAwareHints: {
 		{Version: version.MustParse("1.21"), Default: false, PreRelease: featuregate.Alpha},
 		{Version: version.MustParse("1.23"), Default: false, PreRelease: featuregate.Beta},
@@ -2176,8 +2176,6 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 //
 // Entries are alphabetized.
 var defaultKubernetesFeatureGateDependencies = map[featuregate.Feature][]featuregate.Feature{
-	AffinityTaintTolerationSemverComparisonOperators: {},
-
 	AllowDNSOnlyNodeCSR: {},
 
 	AllowInsecureKubeletCertificateSigningRequests: {},
@@ -2475,6 +2473,8 @@ var defaultKubernetesFeatureGateDependencies = map[featuregate.Feature][]feature
 	SystemdWatchdog: {},
 
 	TaintTolerationComparisonOperators: {},
+
+	TaintTolerationNodeAffinitySemverComparisonOperators: {},
 
 	TopologyAwareHints: {},
 

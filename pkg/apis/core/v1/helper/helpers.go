@@ -299,7 +299,7 @@ func GetMatchingTolerations(logger klog.Logger, taints []v1.Taint, tolerations [
 		return false, []v1.Toleration{}
 	}
 	enableComparisonOperators := utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators)
-	enableSemverComparisonOperators := utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators)
+	enableSemverComparisonOperators := utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators)
 	result := []v1.Toleration{}
 	for i := range taints {
 		tolerated := false

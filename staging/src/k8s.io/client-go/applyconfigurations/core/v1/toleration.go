@@ -36,7 +36,7 @@ type TolerationApplyConfiguration struct {
 	// Exists is equivalent to wildcard for value, so that a pod can
 	// tolerate all taints of a particular category.
 	// Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).
-	// SemverLt, SemverGt, and SemverEq perform Semantic Version comparisons (requires feature gate AffinityTolerationSemverComparisonOperators)
+	// SemverLt, SemverGt, and SemverEq perform Semantic Version comparisons (requires feature gate TaintTolerationNodeAffinitySemverComparisonOperators)
 	Operator *corev1.TolerationOperator `json:"operator,omitempty"`
 	// Value is the taint value the toleration matches to.
 	// If the operator is Exists, the value should be empty, otherwise just a regular string.

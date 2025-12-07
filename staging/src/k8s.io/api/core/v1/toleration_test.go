@@ -25,13 +25,12 @@ import (
 func TestTolerationToleratesTaint(t *testing.T) {
 	logger, _ := ktesting.NewTestContext(t)
 	testCases := []struct {
-		description                                         string
-		toleration                                          Toleration
-		taint                                               Taint
-		expectTolerated                                     bool
-		expectError                                         bool
-		enableTaintTolerationComparisonOperatorsFG          bool
-		enableAffinityTolerationSemverComparisonOperatorsFG bool
+		description                                string
+		toleration                                 Toleration
+		taint                                      Taint
+		expectTolerated                            bool
+		expectError                                bool
+		enableTaintTolerationComparisonOperatorsFG bool
 	}{
 		{
 			description: "toleration and taint have the same key and effect, and operator is Exists, and taint has no value, expect tolerated",

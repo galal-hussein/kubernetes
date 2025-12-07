@@ -33,10 +33,10 @@ import (
 
 // TaintToleration is a plugin that checks if a pod tolerates a node's taints.
 type TaintToleration struct {
-	handle                                            fwk.Handle
-	enableSchedulingQueueHint                         bool
-	enableTaintTolerationComparisonOperators          bool
-	enableAffinityTolerationSemverComparisonOperators bool
+	handle                                                     fwk.Handle
+	enableSchedulingQueueHint                                  bool
+	enableTaintTolerationComparisonOperators                   bool
+	enableTaintTolerationNodeAffinitySemverComparisonOperators bool
 }
 
 var _ fwk.FilterPlugin = &TaintToleration{}
@@ -123,7 +123,7 @@ func (pl *TaintToleration) Filter(ctx context.Context, state fwk.CycleState, pod
 
 	taint, isUntolerated := v1helper.FindMatchingUntoleratedTaint(logger, node.Spec.Taints, pod.Spec.Tolerations,
 		helper.DoNotScheduleTaintsFilterFunc(),
-		pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators)
+		pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators)
 	if !isUntolerated {
 		return nil
 	}
@@ -185,7 +185,7 @@ func (pl *TaintToleration) countIntolerableTaintsPreferNoSchedule(logger klog.Lo
 			continue
 		}
 
-		if !v1helper.TolerationsTolerateTaint(logger, tolerations, &taint, pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
+		if !v1helper.TolerationsTolerateTaint(logger, tolerations, &taint, pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators) {
 			intolerableTaints++
 		}
 	}
@@ -223,7 +223,7 @@ func New(_ context.Context, _ runtime.Object, h fwk.Handle, fts feature.Features
 		handle:                                   h,
 		enableSchedulingQueueHint:                fts.EnableSchedulingQueueHint,
 		enableTaintTolerationComparisonOperators: fts.EnableTaintTolerationComparisonOperators,
-		enableAffinityTolerationSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		enableTaintTolerationNodeAffinitySemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 	}, nil
 }
 

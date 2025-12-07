@@ -264,7 +264,7 @@ func NewVolumeBinder(
 		kubeClient:                      kubeClient,
 		enableVolumeAttributesClass:     fts.EnableVolumeAttributesClass,
 		enableCSIMigrationPortworx:      fts.EnableCSIMigrationPortworx,
-		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		enableSemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 		podLister:                       podInformer.Lister(),
 		classLister:                     storageClassInformer.Lister(),
 		nodeLister:                      nodeInformer.Lister(),

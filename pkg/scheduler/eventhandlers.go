@@ -742,7 +742,7 @@ func preCheckForNode(logger klog.Logger, nodeInfo *framework.NodeInfo) queue.Pre
 		}
 		_, isUntolerated := corev1helpers.FindMatchingUntoleratedTaint(logger, nodeInfo.Node().Spec.Taints, pod.Spec.Tolerations,
 			helper.DoNotScheduleTaintsFilterFunc(),
-			utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators))
+			utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators))
 		return !isUntolerated
 	}
 }
@@ -766,7 +766,7 @@ func AdmissionCheck(pod *v1.Pod, nodeInfo *framework.NodeInfo, includeAllFailure
 		}
 	}
 
-	if matches, _ := corev1nodeaffinity.GetRequiredNodeAffinity(pod, utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators)).Match(nodeInfo.Node()); !matches {
+	if matches, _ := corev1nodeaffinity.GetRequiredNodeAffinity(pod, utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators)).Match(nodeInfo.Node()); !matches {
 		admissionResults = append(admissionResults, AdmissionResult{Name: nodeaffinity.Name, Reason: nodeaffinity.ErrReasonPod})
 		if !includeAllFailures {
 			return admissionResults

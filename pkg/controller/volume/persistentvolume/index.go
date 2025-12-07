@@ -94,7 +94,7 @@ func (pvIndex *persistentVolumeOrderedIndex) findByClaim(claim *v1.PersistentVol
 			return nil, err
 		}
 
-		bestVol, err := volume.FindMatchingVolume(claim, volumes, nil /* node for topology binding*/, nil /* exclusion map */, delayBinding, utilfeature.DefaultFeatureGate.Enabled(features.VolumeAttributesClass), utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators))
+		bestVol, err := volume.FindMatchingVolume(claim, volumes, nil /* node for topology binding*/, nil /* exclusion map */, delayBinding, utilfeature.DefaultFeatureGate.Enabled(features.VolumeAttributesClass), utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators))
 		if err != nil {
 			return nil, err
 		}

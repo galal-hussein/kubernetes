@@ -177,7 +177,7 @@ func New(ctx context.Context, plArgs runtime.Object, fh fwk.Handle, fts feature.
 		// cycles.
 		celCache:                        cel.NewCache(10, cel.Features{EnableConsumableCapacity: fts.EnableDRAConsumableCapacity}),
 		draManager:                      fh.SharedDRAManager(),
-		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		enableSemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 	}
 
 	return pl, nil
@@ -564,7 +564,7 @@ func AllocatorFeatures(fts feature.Features) structured.Features {
 		DeviceTaints:              fts.EnableDRADeviceTaints,
 		DeviceBindingAndStatus:    fts.EnableDRADeviceBindingConditions && fts.EnableDRAResourceClaimDeviceStatus,
 		ConsumableCapacity:        fts.EnableDRAConsumableCapacity,
-		SemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		SemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 	}
 }
 

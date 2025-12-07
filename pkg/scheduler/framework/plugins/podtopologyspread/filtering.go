@@ -186,7 +186,7 @@ func (pl *PodTopologySpread) updateWithPod(logger klog.Logger, s *preFilterState
 		return
 	}
 
-	requiredSchedulingTerm := nodeaffinity.GetRequiredNodeAffinity(preemptorPod, pl.enableAffinityTolerationSemverComparisonOperators)
+	requiredSchedulingTerm := nodeaffinity.GetRequiredNodeAffinity(preemptorPod, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators)
 	if !pl.enableNodeInclusionPolicyInPodTopologySpread {
 		// spreading is applied to nodes that pass those filters.
 		// Ignore parsing errors for backwards compatibility.
@@ -202,7 +202,7 @@ func (pl *PodTopologySpread) updateWithPod(logger klog.Logger, s *preFilterState
 		}
 
 		if pl.enableNodeInclusionPolicyInPodTopologySpread &&
-			!constraint.matchNodeInclusionPolicies(logger, preemptorPod, node, requiredSchedulingTerm, pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
+			!constraint.matchNodeInclusionPolicies(logger, preemptorPod, node, requiredSchedulingTerm, pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators) {
 			continue
 		}
 
@@ -254,7 +254,7 @@ func (pl *PodTopologySpread) calPreFilterState(ctx context.Context, pod *v1.Pod,
 	}
 
 	tpCountsByNode := make([][]topologyCount, len(allNodes))
-	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableAffinityTolerationSemverComparisonOperators)
+	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators)
 	processNode := func(n int) {
 		nodeInfo := allNodes[n]
 		node := nodeInfo.Node()
@@ -275,7 +275,7 @@ func (pl *PodTopologySpread) calPreFilterState(ctx context.Context, pod *v1.Pod,
 		tpCounts := make([]topologyCount, 0, len(constraints))
 		for i, c := range constraints {
 			if pl.enableNodeInclusionPolicyInPodTopologySpread &&
-				!c.matchNodeInclusionPolicies(logger, pod, node, requiredNodeAffinity, pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
+				!c.matchNodeInclusionPolicies(logger, pod, node, requiredNodeAffinity, pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators) {
 				continue
 			}
 

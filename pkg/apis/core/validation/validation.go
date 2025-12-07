@@ -4407,7 +4407,7 @@ func ValidateTolerations(tolerations []core.Toleration, fldPath *field.Path, opt
 				allErrors = append(allErrors, field.Invalid(idxPath.Child("value"), toleration.Value, err.Error()))
 			}
 		case core.TolerationOpSemverEq, core.TolerationOpSemverGt, core.TolerationOpSemverLt:
-			if !opts.AllowAffinityTolerationSemverComparisonOperators {
+			if !opts.AllowTaintTolerationNodeAffinitySemverComparisonOperators {
 				validValues := []core.TolerationOperator{core.TolerationOpEqual, core.TolerationOpExists, core.TolerationOpLt, core.TolerationOpGt}
 				allErrors = append(allErrors, field.NotSupported(idxPath.Child("operator"), toleration.Operator, validValues))
 				break
@@ -4499,7 +4499,7 @@ type PodValidationOptions struct {
 	// Allow user namespaces with volume devices, even though they will not function properly (should only be tolerated in updates of objects which already have this invalid configuration).
 	AllowUserNamespacesWithVolumeDevices bool
 	// Allow semver node affinity and toleration comparison operators (SemverGt, SemverLt, SemverEq)
-	AllowAffinityTolerationSemverComparisonOperators bool
+	AllowTaintTolerationNodeAffinitySemverComparisonOperators bool
 	// Allow taint toleration comparison operators (Lt, Gt)
 	AllowTaintTolerationComparisonOperators bool
 	// Allow hostNetwork pods to use user namespaces
@@ -4983,7 +4983,7 @@ func ValidateNodeSelectorRequirement(rq core.NodeSelectorRequirement, allowInval
 			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified single value when `operator` is 'Lt' or 'Gt'"))
 		}
 	case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
-		if !opts.AllowAffinityTolerationSemverComparisonOperators {
+		if !opts.AllowTaintTolerationNodeAffinitySemverComparisonOperators {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), rq.Operator, "not a valid selector operator"))
 			break
 		}

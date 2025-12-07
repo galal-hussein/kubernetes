@@ -369,7 +369,7 @@ claims:
 			DeviceTaints:              utilfeature.DefaultFeatureGate.Enabled(features.DRADeviceTaints),
 			PartitionableDevices:      utilfeature.DefaultFeatureGate.Enabled(features.DRAPartitionableDevices),
 			ConsumableCapacity:        utilfeature.DefaultFeatureGate.Enabled(features.DRAConsumableCapacity),
-			SemverComparisonOperators: utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators),
+			SemverComparisonOperators: utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators),
 		}, allocatedState, draManager.DeviceClasses(), slices, celCache)
 		tCtx.ExpectNoError(err, "create allocator")
 

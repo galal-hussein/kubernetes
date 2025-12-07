@@ -316,18 +316,18 @@ func New(_ context.Context, plArgs runtime.Object, h fwk.Handle, fts feature.Fea
 	pl := &NodeAffinity{
 		handle:                          h,
 		enableSchedulingQueueHint:       fts.EnableSchedulingQueueHint,
-		enableSemverComparisonOperators: fts.EnableAffinityTolerationSemverComparisonOperators,
+		enableSemverComparisonOperators: fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators,
 	}
 	if args.AddedAffinity != nil {
 		if ns := args.AddedAffinity.RequiredDuringSchedulingIgnoredDuringExecution; ns != nil {
-			pl.addedNodeSelector, err = nodeaffinity.NewNodeSelector(ns, fts.EnableAffinityTolerationSemverComparisonOperators)
+			pl.addedNodeSelector, err = nodeaffinity.NewNodeSelector(ns, fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators)
 			if err != nil {
 				return nil, fmt.Errorf("parsing addedAffinity.requiredDuringSchedulingIgnoredDuringExecution: %w", err)
 			}
 		}
 		// TODO: parse requiredDuringSchedulingRequiredDuringExecution when it gets added to the API.
 		if terms := args.AddedAffinity.PreferredDuringSchedulingIgnoredDuringExecution; len(terms) != 0 {
-			pl.addedPrefSchedTerms, err = nodeaffinity.NewPreferredSchedulingTerms(terms, fts.EnableAffinityTolerationSemverComparisonOperators)
+			pl.addedPrefSchedTerms, err = nodeaffinity.NewPreferredSchedulingTerms(terms, fts.EnableTaintTolerationNodeAffinitySemverComparisonOperators)
 			if err != nil {
 				return nil, fmt.Errorf("parsing addedAffinity.preferredDuringSchedulingIgnoredDuringExecution: %w", err)
 			}

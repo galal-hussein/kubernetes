@@ -152,7 +152,7 @@ func (pl *PodTopologySpread) PreScore(
 	}
 
 	// Ignore parsing errors for backwards compatibility.
-	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableAffinityTolerationSemverComparisonOperators)
+	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators)
 	processAllNode := func(n int) {
 		nodeInfo := allNodes[n]
 		node := nodeInfo.Node()
@@ -172,7 +172,7 @@ func (pl *PodTopologySpread) PreScore(
 		for i, c := range state.Constraints {
 			if pl.enableNodeInclusionPolicyInPodTopologySpread &&
 				!c.matchNodeInclusionPolicies(logger, pod, node, requiredNodeAffinity,
-					pl.enableTaintTolerationComparisonOperators, pl.enableAffinityTolerationSemverComparisonOperators) {
+					pl.enableTaintTolerationComparisonOperators, pl.enableTaintTolerationNodeAffinitySemverComparisonOperators) {
 				continue
 			}
 

@@ -90,7 +90,7 @@ func (pl *NodeUnschedulable) isSchedulableAfterPodTolerationChange(logger klog.L
 		if v1helper.TolerationsTolerateTaint(logger, modifiedPod.Spec.Tolerations, &v1.Taint{
 			Key:    v1.TaintNodeUnschedulable,
 			Effect: v1.TaintEffectNoSchedule,
-		}, utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators)) {
+		}, utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators)) {
 			// This update makes the pod tolerate the unschedulable taint.
 			logger.V(5).Info("a new toleration is added for the unschedulable Pod, and it may make it schedulable", "pod", klog.KObj(modifiedPod))
 			return fwk.Queue, nil
@@ -151,7 +151,7 @@ func (pl *NodeUnschedulable) Filter(ctx context.Context, _ fwk.CycleState, pod *
 	podToleratesUnschedulable := v1helper.TolerationsTolerateTaint(logger, pod.Spec.Tolerations, &v1.Taint{
 		Key:    v1.TaintNodeUnschedulable,
 		Effect: v1.TaintEffectNoSchedule,
-	}, utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.AffinityTaintTolerationSemverComparisonOperators))
+	}, utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationComparisonOperators), utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators))
 	if !podToleratesUnschedulable {
 		return fwk.NewStatus(fwk.UnschedulableAndUnresolvable, ErrReasonUnschedulable)
 	}
