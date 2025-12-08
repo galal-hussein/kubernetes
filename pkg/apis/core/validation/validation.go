@@ -1928,6 +1928,8 @@ type PersistentVolumeSpecValidationOptions struct {
 	EnableVolumeAttributesClass bool
 	// Allow invalid label-value in RequiredNodeSelector
 	AllowInvalidLabelValueInRequiredNodeAffinity bool
+	// Allow semver comparison operators
+	AllowTaintTolerationNodeAffinitySemverComparisonOperators bool
 }
 
 // ValidatePersistentVolumeName checks that a name is appropriate for a
@@ -1949,8 +1951,9 @@ var supportedVolumeModes = sets.New(core.PersistentVolumeBlock, core.PersistentV
 
 func ValidationOptionsForPersistentVolume(pv, oldPv *core.PersistentVolume) PersistentVolumeSpecValidationOptions {
 	opts := PersistentVolumeSpecValidationOptions{
-		EnableVolumeAttributesClass:                  utilfeature.DefaultMutableFeatureGate.Enabled(features.VolumeAttributesClass),
-		AllowInvalidLabelValueInRequiredNodeAffinity: false,
+		EnableVolumeAttributesClass:                               utilfeature.DefaultMutableFeatureGate.Enabled(features.VolumeAttributesClass),
+		AllowInvalidLabelValueInRequiredNodeAffinity:              false,
+		AllowTaintTolerationNodeAffinitySemverComparisonOperators: utilfeature.DefaultFeatureGate.Enabled(features.TaintTolerationNodeAffinitySemverComparisonOperators),
 	}
 	if oldPv != nil && oldPv.Spec.VolumeAttributesClassName != nil {
 		opts.EnableVolumeAttributesClass = true
@@ -1959,6 +1962,7 @@ func ValidationOptionsForPersistentVolume(pv, oldPv *core.PersistentVolume) Pers
 		oldPv.Spec.NodeAffinity.Required != nil {
 		terms := oldPv.Spec.NodeAffinity.Required.NodeSelectorTerms
 		opts.AllowInvalidLabelValueInRequiredNodeAffinity = helper.HasInvalidLabelValueInNodeSelectorTerms(terms)
+		opts.AllowTaintTolerationNodeAffinitySemverComparisonOperators = helper.HasSemverComparisonOperator(terms)
 	}
 	return opts
 }
@@ -8734,7 +8738,7 @@ func validateVolumeNodeAffinity(nodeAffinity *core.VolumeNodeAffinity, opts Pers
 	}
 
 	if nodeAffinity.Required != nil {
-		allErrs = append(allErrs, ValidateNodeSelector(nodeAffinity.Required, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("required"), PodValidationOptions{})...)
+		allErrs = append(allErrs, ValidateNodeSelector(nodeAffinity.Required, opts.AllowInvalidLabelValueInRequiredNodeAffinity, fldPath.Child("required"), PodValidationOptions{AllowTaintTolerationNodeAffinitySemverComparisonOperators: opts.AllowTaintTolerationNodeAffinitySemverComparisonOperators})...)
 	} else {
 		allErrs = append(allErrs, field.Required(fldPath.Child("required"), "must specify required node constraints"))
 	}

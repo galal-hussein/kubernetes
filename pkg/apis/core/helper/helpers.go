@@ -526,3 +526,17 @@ func HasInvalidLabelValueInNodeSelectorTerms(terms []core.NodeSelectorTerm) bool
 	}
 	return false
 }
+
+// HasSemverComparisonOperator checks if there's a semver comparison operator
+// being used in the NodeSelectorTerm MatchExpression opertor
+func HasSemverComparisonOperator(terms []core.NodeSelectorTerm) bool {
+	for _, term := range terms {
+		for _, expression := range term.MatchExpressions {
+			switch expression.Operator {
+			case core.NodeSelectorOpSemverEq, core.NodeSelectorOpSemverGt, core.NodeSelectorOpSemverLt:
+				return true
+			}
+		}
+	}
+	return false
+}
